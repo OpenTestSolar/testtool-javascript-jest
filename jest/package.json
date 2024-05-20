@@ -1,0 +1,22 @@
+{
+  "name": "jest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "date-fns": "^3.6.0",
+    "date-fns-tz": "2.0.0",
+    "fs-extra": "^11.2.0",
+    "testsolar-oss-sdk": "^0.0.16"
+  }
+}
