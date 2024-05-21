@@ -303,7 +303,7 @@ export function parseJsonContent(projPath: string, data: any): Record<string, an
         duration: endTime - startTime,
         startTime: startTime,
         endTime: endTime,
-        errMessage: failureMessages,
+        message: failureMessages,
       };
 
       if (!caseResults[testselector]) {
