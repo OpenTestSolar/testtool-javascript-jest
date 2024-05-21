@@ -427,8 +427,8 @@ export function createTestResults(output: Record<string, any[]>): TestResult[] {
   for (const [testCase, results] of Object.entries(output)) {
     for (const result of results) {
       const test = new TestCase(encodeURI(testCase), {}); // 假设 TestCase 构造函数接受路径和空记录
-      const startTime = new Date(result.startTime * 1000).toISOString();
-      const endTime = new Date(result.endTime * 1000).toISOString();
+      const startTime = new Date(result.startTime).toISOString();
+      const endTime = new Date(result.endTime).toISOString();
       const resultType =
         result.result === "passed" ? ResultType.SUCCEED : ResultType.FAILED;
       const message = result.message || "";
