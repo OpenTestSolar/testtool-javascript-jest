@@ -8,7 +8,6 @@ import {
 } from "./jestx/utils"
 
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
-import { te } from "date-fns/locale";
 
 async function runTestCase(runParamFile: string): Promise<void> {
   console.log("Pipe file: ", runParamFile);
