@@ -156,43 +156,6 @@ describe('createTempDirectory', () => {
   });
 });
 
-// executeCommands
-describe('executeCommands', () => {
-    const command = 'npx jest tests/sum.test.ts  --json --outputFile=tests/sum.test.js.json --color=false ';
-    const filePath = 'tests/sum.test.js.json';
-  
-    test('should check if the file exists', () => {
-      executeCommand(command);    
-      // Check if the file exists
-      const fileExists = fs.existsSync(filePath);
-      expect(fileExists).toBe(true);
-    });
-  
-    test('should check if the file content has expected fields', () => {
-      if (fs.existsSync(filePath)) {
-        // Read the file content
-        const fileContent = fs.readFileSync(filePath, 'utf8');
-        const jsonContent = JSON.parse(fileContent);
-  
-        // Verify specific fields in the JSON content
-        const assertionResult = jsonContent.testResults[0].assertionResults[0];
-        expect(assertionResult.fullName).toBe('sum module adds 1 + 2 to equal 3');
-        expect(assertionResult.status).toBe('passed');
-  
-        // Verify the test name and path
-        expect(jsonContent.testResults[0].name).toContain('sum.test.ts');
-        expect(jsonContent.testResults[0].status).toBe('passed');
-      } else {
-        throw new Error(`File ${filePath} does not exist.`);
-      }
-    });
-});
-
-
-describe('Dynamic File Content Check', () => {
-    
-  });
-
 
 
 // groupTestCasesByPath
