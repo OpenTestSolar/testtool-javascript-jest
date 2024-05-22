@@ -420,51 +420,49 @@ export function groupTestCasesByPath(
   return groupedTestCases;
 }
 
-export function createTestResults(output: Record<string, any[]>): TestResult[] {
+export function createTestResults(output: Record<string, any>): TestResult[] {
   const testResults: TestResult[] = [];
 
-  for (const [testCase, results] of Object.entries(output)) {
-    for (const result of results) {
-      const test = new TestCase(encodeURI(testCase), {}); // 假设 TestCase 构造函数接受路径和空记录
-      const startTime = new Date(result.startTime).toISOString();
-      const endTime = new Date(result.endTime).toISOString();
-      const resultType =
-        result.result === "passed" ? ResultType.SUCCEED : ResultType.FAILED;
-      const message = result.message || "";
-      const content = result.content || "";
+  for (const [testCase, result] of Object.entries(output)) {
+    const test = new TestCase(encodeURI(testCase), {}); // 假设 TestCase 构造函数接受路径和空记录
+    const startTime = new Date(result.startTime).toISOString();
+    const endTime = new Date(result.endTime).toISOString();
+    const resultType =
+      result.result === "passed" ? ResultType.SUCCEED : ResultType.FAILED;
+    const message = result.message || "";
+    const content = result.content || "";
 
-      // 创建 TestCaseLog 实例
-      const testLog = new TestCaseLog(
-        startTime, // 使用结束时间作为日志时间
-        result.result === "passed" ? LogLevel.INFO : LogLevel.ERROR,
-        content,
-        [], // 空附件数组
-        undefined, // 无断言错误
-        undefined, // 无运行时错误
-      );
+    // 创建 TestCaseLog 实例
+    const testLog = new TestCaseLog(
+      startTime, // 使用结束时间作为日志时间
+      result.result === "passed" ? LogLevel.INFO : LogLevel.ERROR,
+      content,
+      [], // 空附件数组
+      undefined, // 无断言错误
+      undefined, // 无运行时错误
+    );
 
-      // 创建 TestCaseStep 实例
-      const testStep = new TestCaseStep(
-        startTime,
-        endTime,
-        "Step title",
-        resultType,
-        [testLog],
-      );
+    // 创建 TestCaseStep 实例
+    const testStep = new TestCaseStep(
+      startTime,
+      endTime,
+      "Step title",
+      resultType,
+      [testLog],
+    );
 
-      // 创建 TestResult 实例
-      const testResult = new TestResult(
-        test,
-        startTime,
-        endTime,
-        resultType,
-        message,
-        [testStep],
-      );
+    // 创建 TestResult 实例
+    const testResult = new TestResult(
+      test,
+      startTime,
+      endTime,
+      resultType,
+      message,
+      [testStep],
+    );
 
-      // 添加到结果数组
-      testResults.push(testResult);
-    }
+    // 添加到结果数组
+    testResults.push(testResult);
   }
 
   return testResults;
