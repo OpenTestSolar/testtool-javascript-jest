@@ -8,6 +8,7 @@ import {
 } from "./jestx/utils"
 
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
+import { te } from "date-fns/locale";
 
 async function runTestCase(runParamFile: string): Promise<void> {
   console.log("Pipe file: ", runParamFile);
@@ -27,6 +28,7 @@ async function runTestCase(runParamFile: string): Promise<void> {
     const jsonName = path.replace(/\//g, "_") + ".json";
 
     const { command, testIdentifiers } = generateCommands(path, testcases, jsonName);
+    console.log(testIdentifiers)
     // 执行命令，解析用例生成的 JSON 文件，上报结果
 
     const testResults = await executeCommands(

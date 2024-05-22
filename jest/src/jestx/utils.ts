@@ -146,14 +146,14 @@ export const parseTestcase = (projPath: string, fileData: string[]): string[] =>
     // 遍历每一行
     for (const line of lines) {
       // 匹配 describe 标签
-      const describeMatch = line.match(/describe\(['"](.*?)['"]\,/);
+      const describeMatch = line.match(/describe\(['"](.*?)['"],/);
       if (describeMatch) {
         // 更新 describeContent
         describeContent = describeMatch[1];
       }
 
       // 扫描只有it或者test标签用例，无describe
-      const singleItMatch = line.match(/^(it|test)\(['"](.*?)['"]\,/);
+      const singleItMatch = line.match(/^(it|test)\(['"](.*?)['"],/);
       if (singleItMatch) {
         const testcase = `${relativePath.replace(projPath, '')}?${singleItMatch[2]}`;
         testcases.push(testcase);
@@ -161,7 +161,7 @@ export const parseTestcase = (projPath: string, fileData: string[]): string[] =>
         continue
       }
       // 匹配describe下的 it 或 test 标签
-      const itMatch = line.match(/\s+(it|test)\(['"](.*?)['"]\,/);
+      const itMatch = line.match(/\s+(it|test)\(['"](.*?)['"],/);
       if (itMatch) {
         if (describeContent) {
           const testcase = `${relativePath.replace(projPath, '')}?${describeContent} ${itMatch[2]}`;
@@ -187,7 +187,7 @@ export function generateCommands(
 
   // 检查 testCases 是否为空
   if (testCases.length === 0) {
-    const defaultCommand = `npx jest ${path} --json --outputFile=${jsonName} --color=false `;
+    const defaultCommand = `npx jest ${path} --json --outputFile=${jsonName} --color=false ${extraArgs}`;
     console.log(`Generated default command for test cases: ${defaultCommand}`);
     return { command: defaultCommand, testIdentifiers: [] };
   }
@@ -196,7 +196,7 @@ export function generateCommands(
   if (grepPattern) {
     grepPattern = `--testNamePattern="${grepPattern}"`;
   }
-  const command = `npx jest ${path} ${grepPattern} --json --outputFile=${jsonName} --color=false `;
+  const command = `npx jest ${path} ${grepPattern} --json --outputFile=${jsonName} --color=false ${extraArgs}`;
 
   for (const testcase of testCases) {
     testIdentifiers.push(`${path}?${testcase}`);
