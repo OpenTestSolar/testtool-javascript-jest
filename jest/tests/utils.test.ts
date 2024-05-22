@@ -1,4 +1,5 @@
 import {describe, expect, test} from '@jest/globals';
+import * as fs from 'fs';
 import {
     executeCommand,
     isFileOrDirectory,
@@ -7,6 +8,7 @@ import {
     generateCommands,
     parseJsonContent,
     createTempDirectory,
+    parseJsonFile,
     groupTestCasesByPath,
     createTestResults,
   } from '../src/jestx/utils';
@@ -48,10 +50,10 @@ describe('isFileOrDirectory', () => {
 // filterTestcases
 describe('filterTestcases', () => {
   test('should filter test cases based on selectors', async () => {
-    const testSelectors = ['test1', 'test2'];
-    const parsedTestcases = ['test1', 'test2', 'test3'];
+    const testSelectors = ['tests', 'test2'];
+    const parsedTestcases = ['tests/sum.test.ts', 'test2', 'test3'];
     const result = await filterTestcases(testSelectors, parsedTestcases);
-    expect(result).toEqual(['test1', 'test2']);
+    expect(result).toEqual(['tests/sum.test.ts', 'test2']);
   });
 
   test('should exclude test cases based on selectors when exclude is true', async () => {
@@ -81,6 +83,34 @@ describe('generateCommands', () => {
     const { command } = generateCommands(path, testCases, jsonName);
     expect(command).toContain('npx jest');
   });
+
+  test('should generate zero test execution commands', () => {
+    const path = 'path/to/tests';
+    const testCases: string[] = [];
+    const jsonName = 'results.json';
+    const { command } = generateCommands(path, testCases, jsonName);
+    expect(command).toContain('npx jest');
+  });
+});
+
+// parseJsonFile
+describe('parseJsonFile', () => {
+    test('should parse JSON file and return case results', () => {
+        const projPath = 'tests';
+        const jsonName = 'tests/results.json';
+        const result = parseJsonFile(projPath, jsonName);
+        const expectedResults = {
+            'items/common.test.js?test_items': {
+              result: 'passed',
+              duration: 10000,
+              startTime: 1610000000000,
+              endTime: 1610000010000,
+              message: '',
+              content: '',
+            },
+          };
+        expect(result).toEqual(expectedResults);
+    });
 });
 
 // parseJsonContent
@@ -125,6 +155,44 @@ describe('createTempDirectory', () => {
     expect(tempDirectory).toContain('caseOutPut');
   });
 });
+
+// executeCommands
+describe('executeCommands', () => {
+    const command = 'npx jest tests/sum.test.ts  --json --outputFile=tests/sum.test.js.json --color=false ';
+    const filePath = 'tests/sum.test.js.json';
+  
+    test('should check if the file exists', () => {
+      executeCommand(command);    
+      // Check if the file exists
+      const fileExists = fs.existsSync(filePath);
+      expect(fileExists).toBe(true);
+    });
+  
+    test('should check if the file content has expected fields', () => {
+      if (fs.existsSync(filePath)) {
+        // Read the file content
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const jsonContent = JSON.parse(fileContent);
+  
+        // Verify specific fields in the JSON content
+        const assertionResult = jsonContent.testResults[0].assertionResults[0];
+        expect(assertionResult.fullName).toBe('sum module adds 1 + 2 to equal 3');
+        expect(assertionResult.status).toBe('passed');
+  
+        // Verify the test name and path
+        expect(jsonContent.testResults[0].name).toContain('sum.test.ts');
+        expect(jsonContent.testResults[0].status).toBe('passed');
+      } else {
+        throw new Error(`File ${filePath} does not exist.`);
+      }
+    });
+});
+
+
+describe('Dynamic File Content Check', () => {
+    
+  });
+
 
 
 // groupTestCasesByPath

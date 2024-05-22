@@ -1,0 +1,26 @@
+{
+    "startTime": 1716346165290,
+    "success": true,
+    "testResults": [
+      {
+        "assertionResults": [
+          {
+            "ancestorTitles": [
+              "test_items"
+            ],
+            "failureMessages": [],
+            "fullName": "test_items",
+            "location": null,
+            "status": "passed",
+            "title": "test_greeting"
+          }
+        ],
+        "endTime": 1610000010000,
+        "message": "d",
+        "name": "tests/items/common.test.js",
+        "startTime": 1610000000000,
+        "status": "passed",
+        "summary": ""
+      }
+    ]
+  }

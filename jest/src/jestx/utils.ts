@@ -278,7 +278,6 @@ export function parseJsonFile(
   console.log(JSON.stringify(data, null, 2));
   console.log("---------------------------");
   const result = parseJsonContent(projPath, data);
-
   console.log(`Parse result from json: ${JSON.stringify(result, null, 2)}`);
   return result;
 }
