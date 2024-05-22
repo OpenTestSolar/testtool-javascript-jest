@@ -279,48 +279,47 @@ export function parseSuiteLogs(message: string): Map<string, string> {
 // 解析 JSON 内容并返回用例结果
 export function parseJsonContent(projPath: string, data: any): Record<string, any> {
   const caseResults: Record<string, any> = {};
-  let specResult: Record<string, any> = {};
 
   for (const testResult of data.testResults) {
-    const suiteLogs = parseSuiteLogs(testResult.message)
+    const suiteLogs = parseSuiteLogs(testResult.message);
     const testPath = path.relative(projPath, testResult.name);
-    const startTime = testResult.startTime
-    const endTime = testResult.endTime
+    const startTime = testResult.startTime;
+    const endTime = testResult.endTime;
 
     for (const assertionResult of testResult.assertionResults) {
-      const testName = assertionResult.fullName
-      const testselector = `${testPath}?${testName}`
-      const result = assertionResult.status
+      const testName = assertionResult.fullName;
+      const testselector = `${testPath}?${testName}`;
+      const result = assertionResult.status;
       if (result === "pending") {
-        continue
+        continue;
       }
-      let failureMessages = assertionResult.failureMessages || ""
+      // 确保 failureMessages 是一个字符串
+      let failureMessages = Array.isArray(assertionResult.failureMessages)
+        ? assertionResult.failureMessages.join("\n")
+        : assertionResult.failureMessages || "";
+
       if (suiteLogs.get(testName)) {
-        failureMessages = suiteLogs.get(testName) + "\n" + failureMessages
+        failureMessages = suiteLogs.get(testName) + "\n" + failureMessages;
       }
-      specResult = {
+
+      const specResult = {
         result: result,
         duration: endTime - startTime,
         startTime: startTime,
         endTime: endTime,
         message: failureMessages,
+        content: failureMessages,
       };
 
+      // 不需要检查 specResult 是否存在，因为它总是会被创建
       if (!caseResults[testselector]) {
-        caseResults[testselector] = specResult ? [specResult] : [];
+        caseResults[testselector] = specResult;
       } else {
-        if (specResult) {
-          if (!Array.isArray(caseResults[testselector])) {
-            caseResults[testselector] = [caseResults[testselector]];
-          }
-          caseResults[testselector].push(specResult);
-        }
-
+        caseResults[testselector].message += "\n" + specResult.message;
       }
-
     }
   }
-  return caseResults
+  return caseResults;
 }
 
 // 解析 JSON 文件并返回用例结果
