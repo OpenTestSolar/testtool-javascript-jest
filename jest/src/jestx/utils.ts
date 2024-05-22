@@ -4,8 +4,6 @@ import * as util from "util";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { parseISO, addMilliseconds } from "date-fns";
-import { zonedTimeToUtc } from "date-fns-tz";
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 import {
   TestResult,
@@ -16,6 +14,32 @@ import {
 } from "testsolar-oss-sdk/src/testsolar_sdk/model/testresult";
 
 const exec = util.promisify(child_process.exec);
+
+
+interface SpecResult {
+  result: string;
+  duration: number;
+  startTime: number;
+  endTime: number;
+  message: string,
+  content: string,
+}
+
+interface CaseResult {
+  assertionResults: {
+    fullName: string;
+    status: string;
+    failureMessages: string[];
+  }[];
+  endTime: number;
+  message: string;
+  name: string;
+  startTime: number;
+}
+interface JsonData {
+  testResults: CaseResult[]
+}
+
 
 // 执行命令并返回结果
 export async function executeCommand(
@@ -37,74 +61,12 @@ export async function executeCommand(
   }
 }
 
-export function parseErrorCases(
-  jsonData: any,
-  cases: string[],
-): Record<string, any> {
-  const caseResults: Record<string, any> = {};
-
-  // 获取统计信息
-  const startTime = jsonData.stats.startTime;
-  const duration = jsonData.stats.duration;
-  const [specStartTime, specEndTime, specDuration] = parseTimeStamp(
-    startTime,
-    duration,
-  );
-
-  // 检查 suites 是否为空
-  if (jsonData.suites.length === 0) {
-    if (jsonData.errors.length > 0) {
-      // 处理存在的错误
-      for (const error of jsonData.errors) {
-        const errorMessage = error.message;
-        const errorStack = error.stack;
-        const errorLocation = `${error.location.file}:${error.location.line}:${error.location.column}`;
-        const errorSnippet = error.snippet;
-
-        // 构建错误信息的结构
-        const errorResult = {
-          projectID: null, // 根据实际情况设置或从 error 对象中获取
-          result: "failed",
-          duration: specDuration, // 从统计信息中获取耗时
-          startTime: specStartTime, // 从统计信息中获取启动时间
-          endTime: specEndTime, // 计算结束时间
-          message: errorMessage,
-          content: `${errorStack}\nLocation: ${errorLocation}\nSnippet:\n${errorSnippet}`,
-        };
-
-        // 遍历 cases，为每个 case 添加错误信息
-        for (const testCase of cases) {
-          caseResults[testCase] = [errorResult];
-        }
-      }
-    } else {
-      // 当 suites 和 errors 都为空时，添加特殊消息
-      const message = "日志为空，请检查用例本地是否跑通，或者联系腾讯云助手";
-      for (const testCase of cases) {
-        caseResults[testCase] = [
-          {
-            projectID: null,
-            result: "failed",
-            duration: specDuration,
-            startTime: specStartTime,
-            endTime: specEndTime,
-            message: message,
-            content: message,
-          },
-        ];
-      }
-    }
-  }
-
-  return caseResults;
-}
-
 // 判断路径是文件还是目录
 export const isFileOrDirectory = (path: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     fs.stat(path, (err, stats) => {
       if (err) {
-        resolve(0);
+        reject(err);
         return;
       }
 
@@ -165,7 +127,7 @@ export const filterTestcases = async (
 };
 
 // 解析测试用例
-export const parseTestcase = (projPath: string, fileData: any): string[] => {
+export const parseTestcase = (projPath: string, fileData: string[]): string[] => {
   const testcases: string[] = [];
 
   // 遍历所有文件
@@ -244,23 +206,6 @@ export function generateCommands(
   return { command, testIdentifiers };
 }
 
-// 处理文件路径，移除项目路径前缀
-export function handlePath(projPath: string, filePath: string): string {
-  return filePath.replace(`${projPath}/`, "");
-}
-
-// 解析时间戳，返回开始时间、结束时间和持续时间
-export function parseTimeStamp(
-  startTime: string,
-  duration: number,
-): [number, number, number] {
-  const startDate = zonedTimeToUtc(parseISO(startTime), "UTC");
-  const endDate = addMilliseconds(startDate, duration);
-  const startTimestamp = startDate.getTime() / 1000;
-  const endTimestamp = endDate.getTime() / 1000;
-  return [startTimestamp, endTimestamp, duration / 1000];
-}
-
 export function parseSuiteLogs(message: string): Map<string, string> {
   const contentList = message.split("●")
   const data = new Map<string, string>()
@@ -276,9 +221,10 @@ export function parseSuiteLogs(message: string): Map<string, string> {
   return data
 }
 
+
 // 解析 JSON 内容并返回用例结果
-export function parseJsonContent(projPath: string, data: any): Record<string, any> {
-  const caseResults: Record<string, any> = {};
+export function parseJsonContent(projPath: string, data: JsonData): Record<string, SpecResult> {
+  const caseResults: Record<string, SpecResult> = {};
 
   for (const testResult of data.testResults) {
     const suiteLogs = parseSuiteLogs(testResult.message);
@@ -326,8 +272,7 @@ export function parseJsonContent(projPath: string, data: any): Record<string, an
 export function parseJsonFile(
   projPath: string,
   jsonFile: string,
-  cases: string[],
-): Record<string, any> {
+): Record<string, SpecResult> {
   const data = JSON.parse(fs.readFileSync(jsonFile, "utf-8"));
   console.log("--------json data:---------");
   console.log(JSON.stringify(data, null, 2));
@@ -338,21 +283,6 @@ export function parseJsonFile(
   return result;
 }
 
-// 获取包含项目 ID 的键列表
-export function getKeysWithProjectId(record: Record<string, any>): string[] {
-  const resultList: string[] = [];
-
-  for (const key in record) {
-    if (record.hasOwnProperty(key)) {
-      const projectId = record[key].projectId;
-      const combinedKey = key + "/" + projectId;
-      resultList.push(combinedKey);
-    }
-  }
-
-  return resultList;
-}
-
 export function createTempDirectory(): string {
   const prefix = "caseOutPut";
   const tempDirectory = path.join(os.tmpdir(), `${prefix}-${Date.now()}`);
@@ -361,8 +291,10 @@ export function createTempDirectory(): string {
     fs.mkdirSync(tempDirectory);
     console.log(`Temporary directory created: ${tempDirectory}`);
     return tempDirectory;
-  } catch (error: any) {
-    console.error(`Failed to create temporary directory: ${error.message}`);
+  } catch (error) {
+    // 这里我们假设捕获的错误是 Error 类型的实例
+    const message = (error instanceof Error) ? error.message : 'Unknown error';
+    console.error(`Failed to create temporary directory: ${message}`);
     throw error;
   }
 }
@@ -371,17 +303,12 @@ export function createTempDirectory(): string {
 export async function executeCommands(
   projPath: string,
   command: string,
-  cases: string[],
   jsonName: string,
-): Promise<Record<string, any>> {
-  const results: Record<string, any> = {};
+): Promise<Record<string, SpecResult>> {
+  const results: Record<string, SpecResult> = {};
 
-  const { stdout, stderr } = await executeCommand(command);
-  // console.log(
-  //   `Run cmdline: ${command} \n Run stdout: ${stdout}\nRun stderr: ${stderr}`,
-  // );
-  // 解析 JSON 文件并处理结果
-  const testResults = parseJsonFile(projPath, jsonName, cases);
+  await executeCommand(command);
+  const testResults = parseJsonFile(projPath, jsonName);
   Object.assign(results, testResults);
   return testResults;
 }
@@ -420,7 +347,7 @@ export function groupTestCasesByPath(
   return groupedTestCases;
 }
 
-export function createTestResults(output: Record<string, any>): TestResult[] {
+export function createTestResults(output: Record<string, SpecResult>): TestResult[] {
   const testResults: TestResult[] = [];
 
   for (const [testCase, result] of Object.entries(output)) {

@@ -83,7 +83,7 @@ async function collectTestCases(
     console.log("filter testcases: ", filterResult);
 
     // 提取用例数据
-    filterResult.forEach((filteredTestCase: any) => {
+    filterResult.forEach((filteredTestCase: string) => {
       const [path, descAndName] = filteredTestCase.split("?");
       const test = new TestCase(`${path}?${descAndName}`, {});
       result.Tests.push(test);
@@ -93,6 +93,7 @@ async function collectTestCases(
     const errorMessage =
       (error as Error).message ||
       "Parse json file error, please check the file content!";
+    console.error(errorMessage);
   }
 
   return result;

@@ -32,7 +32,6 @@ async function runTestCase(runParamFile: string): Promise<void> {
     const testResults = await executeCommands(
       projPath,
       command,
-      testIdentifiers,
       jsonName,
     );
     // console.log("Parse json results:\n", testResults);
