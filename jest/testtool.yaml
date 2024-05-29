@@ -1,18 +1,29 @@
 schemaVersion: 1.0
 name: jest
+nameZh: Jest自动化测试
 lang: javascript
 version: '0.1.0'
 defaultBaseImage: node:18
 langType: INTERPRETED
-description: TestSolar Support For Jest
+description:  |-
+  TestSolar Support For Jest
 homePage: https://github.com/OpenTestSolar/testtool-javascript-jest
 versionFile: https://testsolar-1321258242.cos.ap-guangzhou.myqcloud.com/testtools/javascript/jest/metadata.json
 indexFile: https://testsolar-1321258242.cos.ap-guangzhou.myqcloud.com/testtools/stable.index.json
 scaffoldRepo: https://github.com/OpenTestSolar/testtool-scaffold-jest
+gitPkgUrl: https://github.com/OpenTestSolar/testtool-javascript-jest.git
 parameterDefs: # 用户 use 这个测试工具时可以配置的 with 参数
   - name: extraArgs
     value: jest额外参数
+    desc: jest命令行额外参数
     default: ""
 entry:
   load: "node /testtools/jest/src/load.js $1"
   run: "node /testtools/jest/src/run.js $1"
+supportOS:
+  - windows
+  - linux
+  - darwin
+supportArch:
+  - amd64
+  - arm64
