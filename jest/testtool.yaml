@@ -14,6 +14,7 @@ scaffoldRepo: https://github.com/OpenTestSolar/testtool-scaffold-jest
 parameterDefs: # 用户 use 这个测试工具时可以配置的 with 参数
   - name: extraArgs
     value: jest额外参数
+    desc: jest命令行额外参数
     default: ""
 entry:
   load: "node /testtools/jest/src/load.js $1"
