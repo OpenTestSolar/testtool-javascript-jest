@@ -5,7 +5,7 @@ import {
   generateCommands,
   groupTestCasesByPath,
   createTestResults,
-} from "./jestx/utils"
+} from "./jestx/utils";
 
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
 
@@ -23,18 +23,18 @@ export async function runTestCase(runParamFile: string): Promise<void> {
 
   // 对每个文件生成命令行
   for (const [path, testcases] of Object.entries(caseLists)) {
-      // 生成 json 文件名称
+    // 生成 json 文件名称
     const jsonName = path.replace(/\//g, "_") + ".json";
 
-    const { command, testIdentifiers } = generateCommands(path, testcases, jsonName);
-    console.log(testIdentifiers)
-    // 执行命令，解析用例生成的 JSON 文件，上报结果
-
-    const testResults = await executeCommands(
-      projPath,
-      command,
+    const { command, testIdentifiers } = generateCommands(
+      path,
+      testcases,
       jsonName,
     );
+    console.log(testIdentifiers);
+    // 执行命令，解析用例生成的 JSON 文件，上报结果
+
+    const testResults = await executeCommands(projPath, command, jsonName);
     // console.log("Parse json results:\n", testResults);
     const results = createTestResults(testResults);
     const reporter = new Reporter(taskId);
