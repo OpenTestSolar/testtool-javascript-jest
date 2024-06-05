@@ -15,14 +15,13 @@ import {
 
 const exec = util.promisify(child_process.exec);
 
-
 interface SpecResult {
   result: string;
   duration: number;
   startTime: number;
   endTime: number;
-  message: string,
-  content: string,
+  message: string;
+  content: string;
 }
 
 interface CaseResult {
@@ -37,9 +36,8 @@ interface CaseResult {
   startTime: number;
 }
 interface JsonData {
-  testResults: CaseResult[]
+  testResults: CaseResult[];
 }
-
 
 // 执行命令并返回结果
 export async function executeCommand(
@@ -127,21 +125,23 @@ export const filterTestcases = async (
 };
 
 // 解析测试用例
-export const parseTestcase = (projPath: string, fileData: string[]): string[] => {
+export const parseTestcase = (
+  projPath: string,
+  fileData: string[],
+): string[] => {
   const testcases: string[] = [];
 
   // 遍历所有文件
   for (const filePath of fileData) {
-
     const relativePath = path.relative(projPath, filePath);
     // 读取文件内容
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const fileContent = fs.readFileSync(filePath, "utf-8");
 
     // 将文件内容按行分割
-    const lines = fileContent.split('\n');
+    const lines = fileContent.split("\n");
 
     // 初始化 describeContent 变量
-    let describeContent = '';
+    let describeContent = "";
 
     // 遍历每一行
     for (const line of lines) {
@@ -155,16 +155,16 @@ export const parseTestcase = (projPath: string, fileData: string[]): string[] =>
       // 扫描只有it或者test标签用例，无describe
       const singleItMatch = line.match(/^(it|test)\(['"](.*?)['"],/);
       if (singleItMatch) {
-        const testcase = `${relativePath.replace(projPath, '')}?${singleItMatch[2]}`;
+        const testcase = `${relativePath.replace(projPath, "")}?${singleItMatch[2]}`;
         testcases.push(testcase);
-        describeContent = ''
-        continue
+        describeContent = "";
+        continue;
       }
       // 匹配describe下的 it 或 test 标签
       const itMatch = line.match(/\s+(it|test)\(['"](.*?)['"],/);
       if (itMatch) {
         if (describeContent) {
-          const testcase = `${relativePath.replace(projPath, '')}?${describeContent} ${itMatch[2]}`;
+          const testcase = `${relativePath.replace(projPath, "")}?${describeContent} ${itMatch[2]}`;
           testcases.push(testcase);
         }
       }
@@ -207,23 +207,25 @@ export function generateCommands(
 }
 
 export function parseSuiteLogs(message: string): Map<string, string> {
-  const contentList = message.split("●")
-  const data = new Map<string, string>()
+  const contentList = message.split("●");
+  const data = new Map<string, string>();
 
   for (const content of contentList) {
     if (!content.trim()) {
-      continue
+      continue;
     }
-    const case_name = content.split("\n")[0].replace(" › ", " ").trim()
-    data.set(case_name, content)
+    const case_name = content.split("\n")[0].replace(" › ", " ").trim();
+    data.set(case_name, content);
   }
 
-  return data
+  return data;
 }
 
-
 // 解析 JSON 内容并返回用例结果
-export function parseJsonContent(projPath: string, data: JsonData): Record<string, SpecResult> {
+export function parseJsonContent(
+  projPath: string,
+  data: JsonData,
+): Record<string, SpecResult> {
   const caseResults: Record<string, SpecResult> = {};
 
   for (const testResult of data.testResults) {
@@ -286,16 +288,9 @@ export function createTempDirectory(): string {
   const prefix = "caseOutPut";
   const tempDirectory = path.join(os.tmpdir(), `${prefix}-${Date.now()}`);
 
-  try {
-    fs.mkdirSync(tempDirectory);
-    console.log(`Temporary directory created: ${tempDirectory}`);
-    return tempDirectory;
-  } catch (error) {
-    // 这里我们假设捕获的错误是 Error 类型的实例
-    const message = (error instanceof Error) ? error.message : 'Unknown error';
-    console.error(`Failed to create temporary directory: ${message}`);
-    throw error;
-  }
+  fs.mkdirSync(tempDirectory);
+  console.log(`Temporary directory created: ${tempDirectory}`);
+  return tempDirectory;
 }
 
 // 执行命令列表并上报结果
@@ -346,7 +341,9 @@ export function groupTestCasesByPath(
   return groupedTestCases;
 }
 
-export function createTestResults(output: Record<string, SpecResult>): TestResult[] {
+export function createTestResults(
+  output: Record<string, SpecResult>,
+): TestResult[] {
   const testResults: TestResult[] = [];
 
   for (const [testCase, result] of Object.entries(output)) {

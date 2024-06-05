@@ -1,0 +1,46 @@
+{
+    "testResults": [
+      {
+          "assertionResults": [
+            {
+              "ancestorTitles": [
+                "test_items"
+              ],
+              "failureMessages": [
+                "Error: expect(received).toEqual(expected) // deep equality\n\nExpected: \"Hello, Tom!\"\nReceived: \"Hello, world! Tom!\"\n    at Object.<anonymous> (/data/tests/items/common.test.js:6:29)\n    at Object.asyncJestTest (/data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/jasmineAsyncInstall.js:106:37)\n    at /data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/queueRunner.js:45:12\n    at new Promise (<anonymous>)\n    at mapper (/data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/queueRunner.js:28:19)\n    at /data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/queueRunner.js:75:41"
+              ],
+              "fullName": "test_items test_greeting",
+              "location": null,
+              "status": "failed",
+              "title": "test_greeting"
+            },
+            {
+              "ancestorTitles": [
+                "test_items"
+              ],
+              "failureMessages": [""],
+              "fullName": "test_items test_greeting",
+              "location": null,
+              "status": "pending",
+              "title": "test_greeting"
+            },
+            {
+              "ancestorTitles": [
+                "test_items"
+              ],
+              "failureMessages": ["123"],
+              "fullName": "test_items test_greeting",
+              "location": null,
+              "status": "failed",
+              "title": "test_greeting"
+            }
+          ],
+          "endTime": 1716346166067,
+          "message": "  ● test_items › test_greeting\n\n    expect(received).toEqual(expected) // deep equality\n\n    Expected: \"Hello, Tom!\"\n    Received: \"Hello, world! Tom!\"\n\n      4 |   it('test_greeting', () => {\n      5 |     console.log(\"===---111222\")\n    > 6 |     expect(greeting('Tom')).toEqual('Hello, Tom!')\n        |                             ^\n      7 |   });\n      8 | })\n      9 |\n\n      at Object.<anonymous> (items/common.test.js:6:29)\n",
+          "name": "/data/tests/items/common.test.js",
+          "startTime": 1716346165650,
+          "status": "failed",
+          "summary": ""
+        }
+    ]
+  }
