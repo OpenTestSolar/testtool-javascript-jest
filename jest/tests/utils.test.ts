@@ -196,12 +196,12 @@ describe("executeCommands", () => {
 describe("groupTestCasesByPath", () => {
   test("should group test cases by path", () => {
     const testcases = [
-      "tests/sum.test.js?sum module adds 1 + 2 to equal 3",
-      "tests/sum.test.js",
+      "tests/utils.test.js?sum module adds 1 + 2 to equal 3",
+      "tests/utils.test.js",
     ];
     const result = groupTestCasesByPath(testcases);
     expect(result).toEqual({
-      "tests/sum.test.js": ["sum module adds 1 + 2 to equal 3", ""],
+      "tests/utils.test.js": ["sum module adds 1 + 2 to equal 3", ""],
     });
   });
 });
