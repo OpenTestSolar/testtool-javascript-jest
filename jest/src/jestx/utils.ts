@@ -165,7 +165,7 @@ export const parseTestcase = (projPath: string, fileData: string[]): string[] =>
       if (itMatch) {
         if (describeContent) {
           const testcase = `${relativePath.replace(projPath, '')}?${describeContent} ${itMatch[2]}`;
-          testcases.push(testcase);
+          testcases.push(encodeURI(testcase));
         }
       }
     }
