@@ -52,9 +52,9 @@ describe("isFileOrDirectory", () => {
 describe("filterTestcases", () => {
   test("should filter test cases based on selectors", async () => {
     const testSelectors = ["tests", "test2"];
-    const parsedTestcases = ["tests/sum.test.ts", "test2", "test3"];
+    const parsedTestcases = ["tests/utils.test.ts", "test2", "test3"];
     const result = await filterTestcases(testSelectors, parsedTestcases);
-    expect(result).toEqual(["tests/sum.test.ts", "test2"]);
+    expect(result).toEqual(["tests/utils.test.ts", "test2"]);
   });
 
   test("should filter test cases based on none selectors", async () => {
@@ -76,10 +76,10 @@ describe("filterTestcases", () => {
 describe("parseTestcase", () => {
   test("should parse test cases from file data", () => {
     const projPath = "tests";
-    const fileData = ["tests/sum.test.ts"];
+    const fileData = ["tests/utils.test.ts"];
     const result = parseTestcase(projPath, fileData);
     expect(result).toEqual(
-      expect.arrayContaining(["sum.test.ts?sum module adds 1 + 2 to equal 3"]),
+      expect.arrayContaining(["utils.test.ts?executeCommand should execute a command and return stdout and stderr"]),
     );
   });
 });
