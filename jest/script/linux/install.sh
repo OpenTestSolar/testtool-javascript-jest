@@ -10,8 +10,10 @@ echo ${TOOL_ROOT}
 
 cd ${TOOL_ROOT}
 
-npm install
+npm install pnpm -g
 
-npm install typescript
+pnpm install
+
+pnpm install typescript
 
 npx tsc
