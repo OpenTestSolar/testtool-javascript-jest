@@ -4,7 +4,7 @@ nameZh: Jest自动化测试
 lang: javascript
 version: '0.1.0'
 defaultBaseImage: node:18
-langType: COMPILED
+langType: INTERPRETED
 description:  |-
   TestSolar Support For Jest
 homePage: https://github.com/OpenTestSolar/testtool-javascript-jest
