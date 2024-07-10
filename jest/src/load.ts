@@ -3,7 +3,6 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   createTempDirectory,
-  isFileOrDirectory,
   executeCommand,
   parseTestcase,
   filterTestcases,
@@ -30,29 +29,16 @@ export async function collectTestCases(
     process.chdir(projPath);
     console.log(`Current directory: ${process.cwd()}`);
 
-    // 避免镜像中依赖目录被覆盖并且jest版本不是最新，采用动态安装依赖
-    const installCommand =
-      "npm cache clean --force && npm install -g pnpm && pnpm install && pnpm list";
-    console.log("Run Command: ", installCommand);
-    const { stdout, stderr } = await executeCommand(installCommand);
-    console.log("stdout:", stdout);
-    console.log("stderr:", stderr);
-
     const tempDirectory = createTempDirectory();
     const filePath = path.join(tempDirectory, "testSolarOutput.json");
 
     // 执行命令获取output.json文件内容
-    const fileType = await isFileOrDirectory(filePath).catch((err) => {
-      console.error(err);
-      return 0;
-    });
-    if (fileType !== 1) {
-      const command = `npx jest --listTests --json | tee ${filePath}`;
-      console.log("Run Command: ", command);
-      const { stdout, stderr } = await executeCommand(command);
-      console.log("stdout:", stdout);
-      console.log("stderr:", stderr);
-    }
+
+    const command = `npx jest --listTests --json | tee ${filePath}`;
+    console.log("Run Command: ", command);
+    const { stdout, stderr } = await executeCommand(command);
+    console.log("stdout:", stdout);
+    console.log("stderr:", stderr);
 
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const testData = JSON.parse(fileContent);
