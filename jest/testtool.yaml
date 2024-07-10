@@ -11,6 +11,7 @@ homePage: https://github.com/OpenTestSolar/testtool-javascript-jest
 versionFile: https://testsolar-1321258242.cos.ap-guangzhou.myqcloud.com/testtools/javascript/jest/metadata.json
 indexFile: https://testsolar-1321258242.cos.ap-guangzhou.myqcloud.com/testtools/stable.index.json
 scaffoldRepo: https://github.com/OpenTestSolar/testtool-scaffold-jest
+repository: https://github.com/OpenTestSolar/testtool-javascript-jest
 gitPkgUrl: https://github.com/OpenTestSolar/testtool-javascript-jest.git
 httpPkgUrl: https://testsolar-1321258242.cos.ap-guangzhou.myqcloud.com/testtools/javascript/jest/metadata.json@stable
 repository: https://github.com/OpenTestSolar/testtool-javascript-jest/tree/main/jest
