@@ -31,6 +31,6 @@
     "date-fns": "2.30.0",
     "date-fns-tz": "2.0.0",
     "fs-extra": "^11.2.0",
-    "testsolar-oss-sdk": "^0.0.16"
+    "testsolar-oss-sdk": "^0.0.17"
   }
 }
