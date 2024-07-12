@@ -286,7 +286,7 @@ export function parseJsonFile(
 
 export function createTempDirectory(): string {
   const prefix = "caseOutPut";
-  const tempDirectory = path.join(os.tmpdir(), `${prefix}-${Date.now()}`);
+  const tempDirectory = path.join(os.homedir(), `${prefix}-${Date.now()}`);
 
   fs.mkdirSync(tempDirectory);
   console.log(`Temporary directory created: ${tempDirectory}`);
