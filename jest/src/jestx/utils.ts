@@ -286,11 +286,18 @@ export function parseJsonFile(
 
 export function createTempDirectory(): string {
   const prefix = "caseOutPut";
-  const tempDirectory = path.join(os.tmpdir(), `${prefix}-${Date.now()}`);
+  const tempDirectory = path.join(os.homedir(), `${prefix}-${Date.now()}`);
 
-  fs.mkdirSync(tempDirectory);
-  console.log(`Temporary directory created: ${tempDirectory}`);
-  return tempDirectory;
+  try {
+    fs.mkdirSync(tempDirectory);
+    console.log(`Temporary directory created: ${tempDirectory}`);
+    return tempDirectory;
+  } catch (error) {
+    // 这里我们假设捕获的错误是 Error 类型的实例
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(`Failed to create temporary directory: ${message}`);
+    throw error;
+  }
 }
 
 // 执行命令列表并上报结果
