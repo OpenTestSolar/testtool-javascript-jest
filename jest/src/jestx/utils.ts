@@ -423,7 +423,8 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
 
   if (fs.existsSync(cloverXml)) {
     // 目标 clover.xml 文件路径
-    const targetCloverXmlPath = path.join(fileReportPath, "clover.xml");
+    const unique_id = uuidv4();
+    const targetCloverXmlPath = path.join(fileReportPath, unique_id, "clover.xml");
 
     // 尝试复制文件
     try {
@@ -453,7 +454,7 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
       fs.mkdirSync(testsolarCoverageDir);
     }
 
-    const randomFileName = `${uuidv4()}.json`;
+    const randomFileName = `${unique_id}.json`;
     const randomFilePath = path.join(testsolarCoverageDir, randomFileName);
     
     fs.writeFileSync(randomFilePath, JSON.stringify(coverage, null, 2));
