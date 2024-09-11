@@ -318,8 +318,8 @@ export async function executeCommands(
   log.info(`Execute final command: ${command}`);
 
   try {
-    await retry(async (bail) => {
-      const { stdout, stderr } = await executeCommand(command);
+    await retry(async () => {
+      await executeCommand(command);
 
       if (!fs.existsSync(jsonName)) {
         log.error(`File not found after command execution: ${jsonName}`);
@@ -462,7 +462,7 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
     };
 
     // 在 projectPath 下的 testsolar_coverage 目录中创建一个随机名称（UUID）的 JSON 文件
-    const testsolarCoverageDir = path.join(projectPath, "testsolar_coverage");
+    const testsolarCoverageDir = path.join(projectPath, coverageFileName);
     if (!fs.existsSync(testsolarCoverageDir)) {
       fs.mkdirSync(testsolarCoverageDir);
     }
