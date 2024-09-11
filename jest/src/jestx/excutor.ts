@@ -40,9 +40,9 @@ export async function runTestCase(runParamFile: string): Promise<void> {
     const coverage_enable = process.env.TESTSOLAR_TTP_ENABLECOVERAGE || "";
     if (coverage_enable) {
       log.info("Enable coverage, run jest with coverage");
-      finalCommand = `{${command} --collect-coverage}`;
+      finalCommand = `${command} --collect-coverage`;
     }
-    
+
     // 执行命令，解析用例生成的 JSON 文件，上报结果
     const testResults = await executeCommands(projPath, finalCommand, jsonName);
     // log.info("Parse json results:\n", testResults);
