@@ -8,7 +8,7 @@ import {
   filterTestcases,
 } from "./utils";
 
-import log from './logger';
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 
 import {
   LoadError,

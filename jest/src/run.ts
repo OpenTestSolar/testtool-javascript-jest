@@ -1,5 +1,6 @@
 import * as process from "process";
 import { runTestCase } from "./jestx/excutor";
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 
 // 从命令行参数中获取文件路径
 const runParamFile = process.argv[2];
@@ -8,9 +9,9 @@ const runParamFile = process.argv[2];
 async function main() {
   try {
     await runTestCase(runParamFile);
-    console.log("Run result reported successfully");
+    log.info("Run result reported successfully");
   } catch (error) {
-    console.error("Failed to run test cases:", error);
+    log.error("Failed to run test cases:", error);
   }
 }
 

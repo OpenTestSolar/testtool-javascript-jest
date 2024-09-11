@@ -7,7 +7,7 @@ import * as path from "path";
 import { v4 as uuidv4 } from 'uuid';
 import retry from 'async-retry';
 
-import log from './logger';
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 import {
   TestResult,
@@ -64,7 +64,7 @@ export async function executeCommand(
     return { stdout, stderr };
   } catch (error) {
     const typedError = error as Error & { stdout: string; stderr: string }; // 类型断言
-    // console.error(
+    // log.error(
     //   `Error executing command: ${command}\nError stdout: ${typedError.stdout}\nError stderr: ${typedError.stderr}, please check testcase's log`,
     // );
     return {
@@ -111,7 +111,7 @@ export const filterTestcases = async (
 
     for (const selector of testSelectors) {
       const fileType = await isFileOrDirectory(selector).catch((err) => {
-        console.error(err);
+        log.error(err);
         return 0;
       });
 
@@ -431,7 +431,7 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
       // 删除源文件
       fs.unlinkSync(cloverXml);
     } catch (error) {
-      console.error(`Error moving file from ${cloverXml} to ${targetCloverXmlPath}:`, error);
+      log.error(`Error moving file from ${cloverXml} to ${targetCloverXmlPath}:`, error);
       return;
     }
 
@@ -460,7 +460,7 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
     
     log.info(`Coverage data written to ${randomFilePath}`);
   } else {
-    console.error(`Clover XML file not found at ${cloverXml}`);
+    log.error(`Clover XML file not found at ${cloverXml}`);
   }
 }
 

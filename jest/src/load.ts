@@ -1,5 +1,6 @@
 import * as process from "process";
 import { loadTestCasesFromFile } from "./jestx/parser";
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 
 // 从命令行参数中获取文件路径
 const loadParamFile = process.argv[2];
@@ -8,9 +9,9 @@ const loadParamFile = process.argv[2];
 async function main() {
   try {
     await loadTestCasesFromFile(loadParamFile);
-    console.log("Load result reported successfully");
+    log.info("Load result reported successfully");
   } catch (error) {
-    console.error("Failed to load test cases:", error);
+    log.error("Failed to load test cases:", error);
   }
 }
 

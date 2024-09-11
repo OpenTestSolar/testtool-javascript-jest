@@ -36,7 +36,7 @@
     "fs-extra": "^11.2.0",
     "loglevel": "^1.9.2",
     "loglevel-plugin-prefix": "^0.8.4",
-    "testsolar-oss-sdk": "^0.0.18",
+    "testsolar-oss-sdk": "^0.0.19",
     "uuid": "^10.0.0"
   }
 }
