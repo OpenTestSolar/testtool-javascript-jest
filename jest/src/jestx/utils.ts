@@ -58,20 +58,19 @@ interface Coverage {
 // 执行命令并返回结果
 export async function executeCommand(
   command: string,
-): Promise<{ stdout: string; stderr: string; error?: Error }> {
+): Promise<{ stdout: string; stderr: string }> {
   try {
     const { stdout, stderr } = await exec(command);
     return { stdout, stderr };
   } catch (error) {
-    const typedError = error as Error & { stdout: string; stderr: string }; // 类型断言
-    // log.error(
-    //   `Error executing command: ${command}\nError stdout: ${typedError.stdout}\nError stderr: ${typedError.stderr}, please check testcase's log`,
-    // );
-    return {
-      stdout: typedError.stdout,
-      stderr: typedError.stderr,
-      error: typedError,
-    };
+    const typedError = error as Error & { stdout: string; stderr: string };
+    // 记录错误日志
+    log.error(`Error executing command: ${command}`);
+    log.error(`Error message: ${typedError.message}`);
+    log.error(`stdout: ${typedError.stdout}`);
+    log.error(`stderr: ${typedError.stderr}`);
+    // 抛出错误以触发重试机制
+    throw typedError;
   }
 }
 
@@ -318,19 +317,33 @@ export async function executeCommands(
   const results: Record<string, SpecResult> = {};
   log.info(`Execute final command: ${command}`);
 
-  await retry(async () => {
-    await executeCommand(command);
-    if (!fs.existsSync(jsonName)) {
-      throw new Error(`File not found: ${jsonName}`);
-    }
-  }, {
-    retries: 3,
-    minTimeout: 2000,
-  });
+  try {
+    await retry(async (bail) => {
+      const { stdout, stderr } = await executeCommand(command);
 
-  const testResults = parseJsonFile(projPath, jsonName);
-  Object.assign(results, testResults);
-  return testResults;
+      if (!fs.existsSync(jsonName)) {
+        log.error(`File not found after command execution: ${jsonName}`);
+        throw new Error(`File not found: ${jsonName}`);
+      }
+    }, {
+      retries: 3,
+      minTimeout: 2000,
+      onRetry: (error, attempt) => {
+        log.warn(`Retrying command (${attempt}/3): ${error.message}`);
+      },
+    });
+
+    const testResults = parseJsonFile(projPath, jsonName);
+    Object.assign(results, testResults);
+  } catch (finalError) {
+    if (finalError instanceof Error) {
+      log.error(`Failed to execute command after retries: ${finalError.message}`);
+    } else {
+      log.error(`Failed to execute command after retries: ${finalError}`);
+    }
+  }
+
+  return results;
 }
 
 export function groupTestCasesByPath(
