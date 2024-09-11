@@ -26,8 +26,7 @@ describe("executeCommand", () => {
 
   test("should handle command execution errors", async () => {
     const command = "nonexistentcommand";
-    const result = await executeCommand(command);
-    expect(result).toBeDefined();
+    await expect(executeCommand(command)).rejects.toThrowError(/not found/);
   });
 });
 
@@ -44,7 +43,7 @@ describe("isFileOrDirectory", () => {
   });
 
   test("should reject for non-existent paths", async () => {
-    await expect(isFileOrDirectory("path/to/nonexistent")).rejects.toThrow();
+    await expect(isFileOrDirectory("path/to/nonexistent")).rejects.toThrowError(/ENOENT/);
   });
 });
 
@@ -186,12 +185,27 @@ describe("executeCommands", () => {
   test("should execute a command", async () => {
     const path = ".";
     const jsonName = "tests/caseResult.json";
+    const command = 'echo "Hello, world!" && touch tests/caseResult.json';  // 确保文件存在
+    const result = await executeCommands(path, command, jsonName);
+    expect(result).toEqual(expect.any(Object));
+  });
+
+  test("should handle command execution errors", async () => {
+    const path = ".";
+    const jsonName = "tests/caseResult.json";
+    const command = "nonexistentcommand";
+    const result = await executeCommands(path, command, jsonName);
+    expect(result).toEqual({});
+  });
+
+  test("should handle missing JSON file", async () => {
+    const path = ".";
+    const jsonName = "nonexistent.json";
     const command = 'echo "Hello, world!"';
     const result = await executeCommands(path, command, jsonName);
-    expect(result.stdout).toEqual(undefined);
+    expect(result).toEqual({});
   });
 });
-
 // groupTestCasesByPath
 describe("groupTestCasesByPath", () => {
   test("should group test cases by path", () => {
