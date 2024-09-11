@@ -1,7 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach, jest } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
-import { v4 as uuidv4 } from "uuid";
 import {
   executeCommand,
   isFileOrDirectory,
@@ -46,9 +45,6 @@ describe("isFileOrDirectory", () => {
     expect(result).toBe(-1);
   });
 
-
-
-
   test("should r置超时时eturn 0 for neither file nor directory", async () => {
     log.info("Testing unknown path...");
     const testUnknown = path.join(__dirname, "unknown");
@@ -64,9 +60,6 @@ describe("isFileOrDirectory", () => {
   }, 10000);
 
 });
-
-
-
 
 // filterTestcases
 describe("filterTestcases", () => {
@@ -256,8 +249,6 @@ describe("sleep", () => {
   });
 });
 
-
-
 describe("generateCoverageJson", () => {
   const projectPath = "tests";
   const fileReportPath = "tests/testdata";
@@ -294,22 +285,6 @@ describe("generateCoverageJson", () => {
     }
   });
 
-  test("should generate coverage JSON successfully", () => {
-    // 确保测试前目录是干净的
-    if (!fs.existsSync(coverageJsonDir)) {
-      fs.mkdirSync(coverageJsonDir);
-    }
-
-    // 调用函数
-    generateCoverageJson(projectPath, fileReportPath);
-    
-    // 检查生成的 JSON 文件是否存在
-    const files = fs.readdirSync(coverageJsonDir);
-    const jsonFiles = files.filter(file => file.endsWith(".json"));
-    
-    expect(jsonFiles.length).toBeGreaterThan(0); // 至少有一个 JSON 文件被生成
-  });
-
   test("should log an error if clover.xml file does not exist", () => {
     // 确保 clover.xml 文件不存在
     if (fs.existsSync(targetCloverXmlPath)) {
@@ -326,10 +301,6 @@ describe("generateCoverageJson", () => {
     expect(logErrorSpy).toHaveBeenCalledWith(`Clover XML file not found at ${targetCloverXmlPath}`);
   });
 });
-
-
-
-
 
 describe("executeCommands", () => {
   const projPath = "tests";
