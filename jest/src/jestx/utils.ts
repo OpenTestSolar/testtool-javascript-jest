@@ -424,7 +424,7 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
   if (fs.existsSync(cloverXml)) {
     // 目标 clover.xml 文件路径
     const unique_id = uuidv4();
-    const targetCloverXmlPath = path.join(fileReportPath, unique_id, "clover.xml");
+    const targetCloverXmlPath = path.join(fileReportPath, `${unique_id}_clover.xml`);
 
     // 尝试复制文件
     try {
