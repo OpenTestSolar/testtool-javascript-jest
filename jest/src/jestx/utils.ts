@@ -441,3 +441,8 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
     console.error(`Clover XML file not found at ${cloverXml}`);
   }
 }
+
+// sleep 函数用于等待指定的时间（以毫秒为单位）
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

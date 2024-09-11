@@ -6,6 +6,7 @@ import {
   groupTestCasesByPath,
   createTestResults,
   generateCoverageJson,
+  sleep,
 } from "./utils";
 
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
@@ -50,9 +51,10 @@ export async function runTestCase(runParamFile: string): Promise<void> {
     for (const result of results) {
       await reporter.reportTestResult(result);
     }
-
+    
     // 处理覆盖率
     if (coverage_enable) {
+      await sleep(3000)
       generateCoverageJson(projPath, data.FileReportPath);
     }
   }
