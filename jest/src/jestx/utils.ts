@@ -409,9 +409,18 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
   const cloverXml = path.join(projectPath, "coverage", "clover.xml");
 
   if (fs.existsSync(cloverXml)) {
-    // 移动 clover.xml 文件到 fileReportPath 路径
+    // 目标 clover.xml 文件路径
     const targetCloverXmlPath = path.join(fileReportPath, "clover.xml");
-    fs.renameSync(cloverXml, targetCloverXmlPath);
+
+    // 尝试复制文件
+    try {
+      fs.copyFileSync(cloverXml, targetCloverXmlPath);
+      // 删除源文件
+      fs.unlinkSync(cloverXml);
+    } catch (error) {
+      console.error(`Error moving file from ${cloverXml} to ${targetCloverXmlPath}:`, error);
+      return;
+    }
 
     // 创建 ProjectPath 对象
     const projPath: ProjectPath = {
