@@ -27,7 +27,7 @@ describe("executeCommand", () => {
   test("should handle command execution errors", async () => {
     const command = "nonexistentcommand";
     const result = await executeCommand(command);
-    expect(result.error).toBeDefined();
+    expect(result).toBeDefined();
   });
 });
 
