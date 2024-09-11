@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { v4 as uuidv4 } from 'uuid';
+import retry from 'async-retry';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 import {
   TestResult,
@@ -306,7 +307,7 @@ export function createTempDirectory(): string {
   return tempDirectory;
 }
 
-// 执行命令列表并上报结果
+// 执行命令列表并上报结果，增加重试机制
 export async function executeCommands(
   projPath: string,
   command: string,
@@ -314,7 +315,17 @@ export async function executeCommands(
 ): Promise<Record<string, SpecResult>> {
   const results: Record<string, SpecResult> = {};
   console.log(`Execute final command: ${command}`);
-  await executeCommand(command);
+
+  await retry(async () => {
+    await executeCommand(command);
+    if (!fs.existsSync(jsonName)) {
+      throw new Error(`File not found: ${jsonName}`);
+    }
+  }, {
+    retries: 3,
+    minTimeout: 2000,
+  });
+
   const testResults = parseJsonFile(projPath, jsonName);
   Object.assign(results, testResults);
   return testResults;
