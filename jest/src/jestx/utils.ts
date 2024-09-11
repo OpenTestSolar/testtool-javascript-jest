@@ -313,7 +313,7 @@ export async function executeCommands(
   jsonName: string,
 ): Promise<Record<string, SpecResult>> {
   const results: Record<string, SpecResult> = {};
-
+  console.log(`Execute final command: ${command}`);
   await executeCommand(command);
   const testResults = parseJsonFile(projPath, jsonName);
   Object.assign(results, testResults);
