@@ -6,6 +6,8 @@ import * as os from "os";
 import * as path from "path";
 import { v4 as uuidv4 } from 'uuid';
 import retry from 'async-retry';
+
+import log from './logger';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 import {
   TestResult,
@@ -202,7 +204,7 @@ export function generateCommands(
   // 检查 testCases 是否为空
   if (testCases.length === 0) {
     const defaultCommand = `npx jest ${path} --json --outputFile=${jsonName} --color=false ${extraArgs}`;
-    console.log(`Generated default command for test cases: ${defaultCommand}`);
+    log.info(`Generated default command for test cases: ${defaultCommand}`);
     return { command: defaultCommand, testIdentifiers: [] };
   }
 
@@ -216,7 +218,7 @@ export function generateCommands(
     testIdentifiers.push(`${path}?${testcase}`);
   }
 
-  console.log(`Generated command for test cases: ${command}`);
+  log.info(`Generated command for test cases: ${command}`);
   return { command, testIdentifiers };
 }
 
@@ -290,11 +292,11 @@ export function parseJsonFile(
   jsonFile: string,
 ): Record<string, SpecResult> {
   const data = JSON.parse(fs.readFileSync(jsonFile, "utf-8"));
-  console.log("--------json data:---------");
-  console.log(JSON.stringify(data, null, 2));
-  console.log("---------------------------");
+  log.info("--------json data:---------");
+  log.info(JSON.stringify(data, null, 2));
+  log.info("---------------------------");
   const result = parseJsonContent(projPath, data);
-  console.log(`Parse result from json: ${JSON.stringify(result, null, 2)}`);
+  log.info(`Parse result from json: ${JSON.stringify(result, null, 2)}`);
   return result;
 }
 
@@ -303,7 +305,7 @@ export function createTempDirectory(): string {
   const tempDirectory = path.join(os.homedir(), `${prefix}-${Date.now()}`);
 
   fs.mkdirSync(tempDirectory);
-  console.log(`Temporary directory created: ${tempDirectory}`);
+  log.info(`Temporary directory created: ${tempDirectory}`);
   return tempDirectory;
 }
 
@@ -314,7 +316,7 @@ export async function executeCommands(
   jsonName: string,
 ): Promise<Record<string, SpecResult>> {
   const results: Record<string, SpecResult> = {};
-  console.log(`Execute final command: ${command}`);
+  log.info(`Execute final command: ${command}`);
 
   await retry(async () => {
     await executeCommand(command);
@@ -360,7 +362,7 @@ export function groupTestCasesByPath(
     groupedTestCases[path].push(name);
   });
 
-  console.log("Grouped test cases by path: ", groupedTestCases);
+  log.info("Grouped test cases by path: ", groupedTestCases);
 
   return groupedTestCases;
 }
@@ -456,7 +458,7 @@ export function generateCoverageJson(projectPath: string, fileReportPath: string
     
     fs.writeFileSync(randomFilePath, JSON.stringify(coverage, null, 2));
     
-    console.log(`Coverage data written to ${randomFilePath}`);
+    log.info(`Coverage data written to ${randomFilePath}`);
   } else {
     console.error(`Clover XML file not found at ${cloverXml}`);
   }
