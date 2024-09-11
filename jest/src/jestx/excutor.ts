@@ -5,6 +5,7 @@ import {
   generateCommands,
   groupTestCasesByPath,
   createTestResults,
+  generateCoverageJson,
 } from "./utils";
 
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
@@ -32,14 +33,27 @@ export async function runTestCase(runParamFile: string): Promise<void> {
       jsonName,
     );
     console.log(testIdentifiers);
-    // 执行命令，解析用例生成的 JSON 文件，上报结果
 
-    const testResults = await executeCommands(projPath, command, jsonName);
+    // 增加覆盖率参数
+    let finalCommand = command;
+    const coverage_enable = process.env.TESTSOLAR_TTP_ENABLECOVERAGE || "";
+    if (coverage_enable) {
+      console.log("Enable coverage, run jest with coverage");
+      finalCommand = `{${command} --collect-coverage}`;
+    }
+    
+    // 执行命令，解析用例生成的 JSON 文件，上报结果
+    const testResults = await executeCommands(projPath, finalCommand, jsonName);
     // console.log("Parse json results:\n", testResults);
     const results = createTestResults(testResults);
     const reporter = new Reporter(taskId, data.FileReportPath);
     for (const result of results) {
       await reporter.reportTestResult(result);
+    }
+
+    // 处理覆盖率
+    if (coverage_enable) {
+      generateCoverageJson(projPath, data.FileReportPath);
     }
   }
 }

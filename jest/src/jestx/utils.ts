@@ -4,6 +4,7 @@ import * as util from "util";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { v4 as uuidv4 } from 'uuid';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 import {
   TestResult,
@@ -14,6 +15,8 @@ import {
 } from "testsolar-oss-sdk/src/testsolar_sdk/model/testresult";
 
 const exec = util.promisify(child_process.exec);
+
+const coverageFileName = "testsolar_coverage"
 
 interface SpecResult {
   result: string;
@@ -37,6 +40,16 @@ interface CaseResult {
 }
 interface JsonData {
   testResults: CaseResult[];
+}
+
+interface ProjectPath {
+  projectPath: string;
+}
+
+interface Coverage {
+  coverageFile: string;
+  coverageType: string;
+  projectPath: ProjectPath;
 }
 
 // 执行命令并返回结果
@@ -389,4 +402,42 @@ export function createTestResults(
   }
 
   return testResults;
+}
+
+
+export function generateCoverageJson(projectPath: string, fileReportPath: string) {
+  const cloverXml = path.join(projectPath, "coverage", "clover.xml");
+
+  if (fs.existsSync(cloverXml)) {
+    // 移动 clover.xml 文件到 fileReportPath 路径
+    const targetCloverXmlPath = path.join(fileReportPath, "clover.xml");
+    fs.renameSync(cloverXml, targetCloverXmlPath);
+
+    // 创建 ProjectPath 对象
+    const projPath: ProjectPath = {
+      projectPath: projectPath
+    };
+
+    // 创建 Coverage 对象
+    const coverage: Coverage = {
+      coverageFile: targetCloverXmlPath,
+      coverageType: 'clover_xml',
+      projectPath: projPath
+    };
+
+    // 在 projectPath 下的 testsolar_coverage 目录中创建一个随机名称（UUID）的 JSON 文件
+    const testsolarCoverageDir = path.join(projectPath, "testsolar_coverage");
+    if (!fs.existsSync(testsolarCoverageDir)) {
+      fs.mkdirSync(testsolarCoverageDir);
+    }
+
+    const randomFileName = `${uuidv4()}.json`;
+    const randomFilePath = path.join(testsolarCoverageDir, randomFileName);
+    
+    fs.writeFileSync(randomFilePath, JSON.stringify(coverage, null, 2));
+    
+    console.log(`Coverage data written to ${randomFilePath}`);
+  } else {
+    console.error(`Clover XML file not found at ${cloverXml}`);
+  }
 }
