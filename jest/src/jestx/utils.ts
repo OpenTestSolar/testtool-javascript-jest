@@ -4,6 +4,10 @@ import * as util from "util";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { v4 as uuidv4 } from 'uuid';
+import retry from 'async-retry';
+
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 import {
   TestResult,
@@ -14,6 +18,8 @@ import {
 } from "testsolar-oss-sdk/src/testsolar_sdk/model/testresult";
 
 const exec = util.promisify(child_process.exec);
+
+const coverageFileName = "testsolar_coverage"
 
 interface SpecResult {
   result: string;
@@ -39,44 +45,49 @@ interface JsonData {
   testResults: CaseResult[];
 }
 
+interface ProjectPath {
+  projectPath: string;
+}
+
+interface Coverage {
+  coverageFile: string;
+  coverageType: string;
+  projectPath: ProjectPath;
+}
+
 // 执行命令并返回结果
 export async function executeCommand(
   command: string,
-): Promise<{ stdout: string; stderr: string; error?: Error }> {
+): Promise<{ stdout: string; stderr: string }> {
   try {
     const { stdout, stderr } = await exec(command);
     return { stdout, stderr };
   } catch (error) {
-    const typedError = error as Error & { stdout: string; stderr: string }; // 类型断言
-    // console.error(
-    //   `Error executing command: ${command}\nError stdout: ${typedError.stdout}\nError stderr: ${typedError.stderr}, please check testcase's log`,
-    // );
-    return {
-      stdout: typedError.stdout,
-      stderr: typedError.stderr,
-      error: typedError,
-    };
+    const typedError = error as Error & { stdout: string; stderr: string };
+    // 记录错误日志
+    log.error(`Error executing command: ${command}`);
+    log.error(`Error message: ${typedError.message}`);
+    log.error(`stdout: ${typedError.stdout}`);
+    log.error(`stderr: ${typedError.stderr}`);
+    // 抛出错误以触发重试机制
+    throw typedError;
   }
 }
 
 // 判断路径是文件还是目录
-export const isFileOrDirectory = (path: string): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    fs.stat(path, (err, stats) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      if (stats.isFile()) {
-        resolve(1);
-      } else if (stats.isDirectory()) {
-        resolve(-1);
-      } else {
-        resolve(0);
-      }
-    });
-  });
+export const isFileOrDirectory = (filePath: string) => {
+  try {
+    const stats = fs.statSync(filePath);
+    if (stats.isFile()) {
+      return 1; // 文件
+    } else if (stats.isDirectory()) {
+      return -1; // 目录
+    } else {
+      return 0; // 其他类型
+    }
+  } catch (err) {
+    return 0; // 其他类型
+  }
 };
 
 // 根据选择器过滤测试用例
@@ -94,11 +105,7 @@ export const filterTestcases = async (
     let matched = false;
 
     for (const selector of testSelectors) {
-      const fileType = await isFileOrDirectory(selector).catch((err) => {
-        console.error(err);
-        return 0;
-      });
-
+      const fileType = isFileOrDirectory(selector);
       if (fileType === -1) {
         // 如果selector是目录路径，检查testCase是否包含selector + '/' 避免文件名与用例名重复
         if (testCase.includes(selector + "/")) {
@@ -188,7 +195,7 @@ export function generateCommands(
   // 检查 testCases 是否为空
   if (testCases.length === 0) {
     const defaultCommand = `npx jest ${path} --json --outputFile=${jsonName} --color=false ${extraArgs}`;
-    console.log(`Generated default command for test cases: ${defaultCommand}`);
+    log.info(`Generated default command for test cases: ${defaultCommand}`);
     return { command: defaultCommand, testIdentifiers: [] };
   }
 
@@ -202,7 +209,7 @@ export function generateCommands(
     testIdentifiers.push(`${path}?${testcase}`);
   }
 
-  console.log(`Generated command for test cases: ${command}`);
+  log.info(`Generated command for test cases: ${command}`);
   return { command, testIdentifiers };
 }
 
@@ -276,11 +283,11 @@ export function parseJsonFile(
   jsonFile: string,
 ): Record<string, SpecResult> {
   const data = JSON.parse(fs.readFileSync(jsonFile, "utf-8"));
-  console.log("--------json data:---------");
-  console.log(JSON.stringify(data, null, 2));
-  console.log("---------------------------");
+  log.info("--------json data:---------");
+  log.info(JSON.stringify(data, null, 2));
+  log.info("---------------------------");
   const result = parseJsonContent(projPath, data);
-  console.log(`Parse result from json: ${JSON.stringify(result, null, 2)}`);
+  log.info(`Parse result from json: ${JSON.stringify(result, null, 2)}`);
   return result;
 }
 
@@ -289,22 +296,46 @@ export function createTempDirectory(): string {
   const tempDirectory = path.join(os.homedir(), `${prefix}-${Date.now()}`);
 
   fs.mkdirSync(tempDirectory);
-  console.log(`Temporary directory created: ${tempDirectory}`);
+  log.info(`Temporary directory created: ${tempDirectory}`);
   return tempDirectory;
 }
 
-// 执行命令列表并上报结果
+// 执行命令列表并上报结果，增加重试机制
 export async function executeCommands(
   projPath: string,
   command: string,
   jsonName: string,
 ): Promise<Record<string, SpecResult>> {
   const results: Record<string, SpecResult> = {};
+  log.info(`Execute final command: ${command}`);
 
-  await executeCommand(command);
-  const testResults = parseJsonFile(projPath, jsonName);
-  Object.assign(results, testResults);
-  return testResults;
+  try {
+    await retry(async () => {
+      await executeCommand(command);
+
+      if (!fs.existsSync(jsonName)) {
+        log.error(`File not found after command execution: ${jsonName}`);
+        throw new Error(`File not found: ${jsonName}`);
+      }
+    }, {
+      retries: 3,
+      minTimeout: 2000,
+      onRetry: (error, attempt) => {
+        log.warn(`Retrying command (${attempt}/3): ${error.message}`);
+      },
+    });
+
+    const testResults = parseJsonFile(projPath, jsonName);
+    Object.assign(results, testResults);
+  } catch (finalError) {
+    if (finalError instanceof Error) {
+      log.error(`Failed to execute command after retries: ${finalError.message}`);
+    } else {
+      log.error(`Failed to execute command after retries: ${finalError}`);
+    }
+  }
+
+  return results;
 }
 
 export function groupTestCasesByPath(
@@ -336,7 +367,7 @@ export function groupTestCasesByPath(
     groupedTestCases[path].push(name);
   });
 
-  console.log("Grouped test cases by path: ", groupedTestCases);
+  log.info("Grouped test cases by path: ", groupedTestCases);
 
   return groupedTestCases;
 }
@@ -389,4 +420,57 @@ export function createTestResults(
   }
 
   return testResults;
+}
+
+
+export function generateCoverageJson(projectPath: string, fileReportPath: string) {
+  const cloverXml = path.join(projectPath, "coverage", "clover.xml");
+
+  if (fs.existsSync(cloverXml)) {
+    // 目标 clover.xml 文件路径
+    const unique_id = uuidv4();
+    const targetCloverXmlPath = path.join(fileReportPath, `${unique_id}_clover.xml`);
+
+    // 尝试复制文件
+    try {
+      fs.copyFileSync(cloverXml, targetCloverXmlPath);
+      // 删除源文件
+      fs.unlinkSync(cloverXml);
+    } catch (error) {
+      log.error(`Error moving file from ${cloverXml} to ${targetCloverXmlPath}:`, error);
+      return;
+    }
+
+    // 创建 ProjectPath 对象
+    const projPath: ProjectPath = {
+      projectPath: projectPath
+    };
+
+    // 创建 Coverage 对象
+    const coverage: Coverage = {
+      coverageFile: targetCloverXmlPath,
+      coverageType: 'clover_xml',
+      projectPath: projPath
+    };
+
+    // 在 projectPath 下的 testsolar_coverage 目录中创建一个随机名称（UUID）的 JSON 文件
+    const testsolarCoverageDir = path.join(projectPath, coverageFileName);
+    if (!fs.existsSync(testsolarCoverageDir)) {
+      fs.mkdirSync(testsolarCoverageDir);
+    }
+
+    const randomFileName = `${unique_id}.json`;
+    const randomFilePath = path.join(testsolarCoverageDir, randomFileName);
+    
+    fs.writeFileSync(randomFilePath, JSON.stringify(coverage, null, 2));
+    
+    log.info(`Coverage data written to ${randomFilePath}`);
+  } else {
+    log.error(`Clover XML file not found at ${cloverXml}`);
+  }
+}
+
+// sleep 函数用于等待指定的时间（以毫秒为单位）
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -5,15 +5,17 @@ import {
   generateCommands,
   groupTestCasesByPath,
   createTestResults,
+  generateCoverageJson,
+  sleep,
 } from "./utils";
-
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
 
 export async function runTestCase(runParamFile: string): Promise<void> {
-  console.log("Pipe file: ", runParamFile);
+  log.info("Pipe file: ", runParamFile);
   const fileContent = fs.readFileSync(runParamFile, "utf-8");
   const data = JSON.parse(fileContent);
-  console.log(`Pipe file content:\n${JSON.stringify(data, null, 2)}`);
+  log.info(`Pipe file content:\n${JSON.stringify(data, null, 2)}`);
   const testSelectors = data.TestSelectors || [];
   const projPath = data.ProjectPath;
   const taskId = data.TaskId;
@@ -31,15 +33,29 @@ export async function runTestCase(runParamFile: string): Promise<void> {
       testcases,
       jsonName,
     );
-    console.log(testIdentifiers);
-    // 执行命令，解析用例生成的 JSON 文件，上报结果
+    log.info(testIdentifiers);
 
-    const testResults = await executeCommands(projPath, command, jsonName);
-    // console.log("Parse json results:\n", testResults);
+    // 增加覆盖率参数
+    let finalCommand = command;
+    const coverage_enable = process.env.TESTSOLAR_TTP_ENABLECOVERAGE || "";
+    if (coverage_enable) {
+      log.info("Enable coverage, run jest with coverage");
+      finalCommand = `${command} --collect-coverage`;
+    }
+
+    // 执行命令，解析用例生成的 JSON 文件，上报结果
+    const testResults = await executeCommands(projPath, finalCommand, jsonName);
+    // log.info("Parse json results:\n", testResults);
     const results = createTestResults(testResults);
     const reporter = new Reporter(taskId, data.FileReportPath);
     for (const result of results) {
       await reporter.reportTestResult(result);
+    }
+    
+    // 处理覆盖率
+    if (coverage_enable) {
+      await sleep(3000)
+      generateCoverageJson(projPath, data.FileReportPath);
     }
   }
 }

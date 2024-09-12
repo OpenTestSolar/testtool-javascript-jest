@@ -2,7 +2,7 @@ schemaVersion: 1.0
 name: jest
 nameZh: Jest自动化测试
 lang: javascript
-version: '0.2.3'
+version: '0.2.4'
 defaultBaseImage: node:18
 langType: INTERPRETED
 description:  |-
@@ -21,6 +21,12 @@ parameterDefs: # 用户 use 这个测试工具时可以配置的 with 参数
     desc: jest命令行额外参数
     default: ""
     inputWidget: text
+  - name: enableCoverage
+    value: 是否开启覆盖率统计
+    desc: |-
+      采集代码覆盖率信息并上报。
+    default: 'false'
+    inputWidget: switch
 entry:
   load: "node /testtools/jest/src/load.js $1"
   run: "node /testtools/jest/src/run.js $1"

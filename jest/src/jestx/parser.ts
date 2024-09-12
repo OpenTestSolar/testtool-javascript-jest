@@ -8,6 +8,8 @@ import {
   filterTestcases,
 } from "./utils";
 
+import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
+
 import {
   LoadError,
   LoadResult,
@@ -27,7 +29,7 @@ export async function collectTestCases(
   try {
     // 进入projPath目录
     process.chdir(projPath);
-    console.log(`Current directory: ${process.cwd()}`);
+    log.info(`Current directory: ${process.cwd()}`);
 
     const tempDirectory = createTempDirectory();
     const filePath = path.join(tempDirectory, "testSolarOutput.json");
@@ -35,17 +37,17 @@ export async function collectTestCases(
     // 执行命令获取output.json文件内容
 
     const command = `npx jest --listTests --json | tee ${filePath}`;
-    console.log("Run Command: ", command);
+    log.info("Run Command: ", command);
     const { stdout, stderr } = await executeCommand(command);
-    console.log("stdout:", stdout);
-    console.log("stderr:", stderr);
+    log.debug("stdout:", stdout);
+    log.debug("stderr:", stderr);
 
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const testData = JSON.parse(fileContent);
 
     // 解析所有用例
     const loadCaseResult = parseTestcase(projPath, testData);
-    console.log("Jest testtool parse all testcases: \n", loadCaseResult);
+    log.info("Jest testtool parse all testcases: \n", loadCaseResult);
 
     // 过滤用例
     let filterResult;
@@ -66,7 +68,7 @@ export async function collectTestCases(
       // 如果 testSelectors 为空，则直接使用 loadCaseResult
       filterResult = loadCaseResult;
     }
-    console.log("filter testcases: ", filterResult);
+    log.info("filter testcases: ", filterResult);
 
     // 提取用例数据
     filterResult.forEach((filteredTestCase: string) => {
@@ -86,17 +88,17 @@ export async function collectTestCases(
 }
 
 export async function loadTestCasesFromFile(filePath: string): Promise<void> {
-  console.log("Pipe file: ", filePath);
+  log.info("Pipe file: ", filePath);
 
   // 读取文件并解析 JSON
   const fileContent = fs.readFileSync(filePath, "utf-8");
   const data = JSON.parse(fileContent);
-  console.log(`Pipe file content:\n${JSON.stringify(data, null, 2)}`);
+  log.info(`Pipe file content:\n${JSON.stringify(data, null, 2)}`);
   const testSelectors = data.TestSelectors || [];
   const projPath = data.ProjectPath;
   const taskId = data.TaskId;
 
-  console.log("generate demo load result");
+  log.info("generate demo load result");
   const loadResults: LoadResult = await collectTestCases(
     projPath,
     testSelectors,
