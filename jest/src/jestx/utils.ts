@@ -321,7 +321,11 @@ export async function executeCommands(
       retries: 3,
       minTimeout: 2000,
       onRetry: (error, attempt) => {
-        log.warn(`Retrying command (${attempt}/3): ${error.message}`);
+        if (error instanceof Error) {
+          log.warn(`Retrying command (${attempt}/3): ${error.message}`);
+        } else {
+          log.warn(`Retrying command (${attempt}/3): Unknown error`);
+        }
       },
     });
 
