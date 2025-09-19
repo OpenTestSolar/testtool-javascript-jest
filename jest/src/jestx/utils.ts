@@ -311,8 +311,19 @@ export async function executeCommands(
 
   try {
     await retry(async () => {
-      await executeCommand(command);
+      try {
+        await executeCommand(command);
+      } catch (commandError) {
+        // 命令执行失败时，立即检查 JSON 文件是否存在
+        if (jsonName && fs.existsSync(jsonName)) {
+          log.info(`Jest command failed but JSON file exists: ${jsonName}, will use existing results`);
+          return; // 不抛出错误，让重试机制停止
+        }
+        // 如果 JSON 文件不存在，重新抛出错误以触发重试
+        throw commandError;
+      }
 
+      // 命令执行成功后，检查文件是否存在
       if (!fs.existsSync(jsonName)) {
         log.error(`File not found after command execution: ${jsonName}`);
         throw new Error(`File not found: ${jsonName}`);
@@ -329,14 +340,34 @@ export async function executeCommands(
       },
     });
 
-    const testResults = parseJsonFile(projPath, jsonName);
-    Object.assign(results, testResults);
+    // 解析 JSON 文件（无论是命令成功还是文件已存在）
+    if (fs.existsSync(jsonName)) {
+      const testResults = parseJsonFile(projPath, jsonName);
+      Object.assign(results, testResults);
+    }
   } catch (finalError) {
+    // 最终失败处理：检查 JSON 文件是否存在
+    if (jsonName && fs.existsSync(jsonName)) {
+      log.info(`Jest execution failed after retries but JSON file exists: ${jsonName}, parsing results from existing file`);
+      try {
+        const testResults = parseJsonFile(projPath, jsonName);
+        Object.assign(results, testResults);
+        return results;
+      } catch (parseError) {
+        log.error(`Failed to parse existing JSON file ${jsonName}:`, parseError);
+        // 如果解析失败，继续抛出原始错误
+      }
+    } else if (jsonName) {
+      log.error(`Jest execution failed and specified JSON file does not exist: ${jsonName}`);
+      throw new Error(`Jest execution failed and specified JSON file does not exist: ${jsonName}`);
+    }
+
     if (finalError instanceof Error) {
       log.error(`Failed to execute command after retries: ${finalError.message}`);
     } else {
       log.error(`Failed to execute command after retries: ${finalError}`);
     }
+    throw finalError;
   }
 
   return results;

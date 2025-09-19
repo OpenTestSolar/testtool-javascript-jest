@@ -308,8 +308,25 @@ describe("executeCommands", () => {
   const command = `touch ${jsonName}`; // 简单的命令来创建 jsonName 文件
 
   test("should execute command and parse JSON file successfully", async () => {
-    // 创建一个空的 results.json 文件
-    fs.writeFileSync(jsonName, JSON.stringify({}));
+    // 创建一个包含有效 testResults 的 JSON 文件
+    const validJsonData = {
+      testResults: [
+        {
+          assertionResults: [
+            {
+              fullName: "test case",
+              status: "passed",
+              failureMessages: []
+            }
+          ],
+          endTime: Date.now(),
+          message: "",
+          name: path.join(projPath, "test.js"),
+          startTime: Date.now() - 1000
+        }
+      ]
+    };
+    fs.writeFileSync(jsonName, JSON.stringify(validJsonData));
 
     const results = await executeCommands(projPath, command, jsonName);
 
