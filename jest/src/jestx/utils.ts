@@ -147,16 +147,40 @@ export const parseTestcase = (
     // 将文件内容按行分割
     const lines = fileContent.split("\n");
 
-    // 初始化 describeContent 变量
-    let describeContent = "";
+    // 使用栈来跟踪多层 describe 嵌套
+    const describeStack: string[] = [];
+    let braceCount = 0;
+    const braceStack: number[] = [];
 
     // 遍历每一行
     for (const line of lines) {
+      // 计算当前行的缩进层级
+      const indentLevel = (line.match(/^\s*/)?.[0].length || 0) / 4; // 假设使用4个空格缩进
+
       // 匹配 describe 标签
       const describeMatch = line.match(/describe\(['"](.*?)['"],/);
       if (describeMatch) {
-        // 更新 describeContent
-        describeContent = describeMatch[1];
+        // 根据缩进层级调整 describe 栈
+        while (describeStack.length > indentLevel) {
+          describeStack.pop();
+          braceStack.pop();
+        }
+        // 添加新的 describe 到栈中
+        describeStack.push(describeMatch[1]);
+        braceStack.push(braceCount);
+      }
+
+      // 匹配大括号来跟踪作用域
+      const openBraces = (line.match(/\{/g) || []).length;
+      const closeBraces = (line.match(/\}/g) || []).length;
+      braceCount += openBraces - closeBraces;
+
+      // 当遇到闭合大括号时，检查是否需要弹出 describe
+      if (closeBraces > 0) {
+        while (braceStack.length > 0 && braceCount <= braceStack[braceStack.length - 1]) {
+          describeStack.pop();
+          braceStack.pop();
+        }
       }
 
       // 扫描只有it或者test标签用例，无describe
@@ -164,14 +188,20 @@ export const parseTestcase = (
       if (singleItMatch) {
         const testcase = `${relativePath.replace(projPath, "")}?${singleItMatch[2]}`;
         testcases.push(testcase);
-        describeContent = "";
         continue;
       }
+
       // 匹配describe下的 it 或 test 标签
       const itMatch = line.match(/\s+(it|test)\(['"](.*?)['"],/);
       if (itMatch) {
-        if (describeContent) {
-          const testcase = `${relativePath.replace(projPath, "")}?${describeContent} ${itMatch[2]}`;
+        if (describeStack.length > 0) {
+          // 构建完整的测试用例路径，包含所有层级的 describe
+          const fullDescribePath = describeStack.join(' ');
+          const testcase = `${relativePath.replace(projPath, "")}?${fullDescribePath} ${itMatch[2]}`;
+          testcases.push(testcase);
+        } else {
+          // 如果没有 describe 包围，直接使用测试名称
+          const testcase = `${relativePath.replace(projPath, "")}?${itMatch[2]}`;
           testcases.push(testcase);
         }
       }
