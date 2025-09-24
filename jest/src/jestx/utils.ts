@@ -138,77 +138,117 @@ export const parseTestcase = (
 ): string[] => {
   const testcases: string[] = [];
 
-  // 遍历所有文件
   for (const filePath of fileData) {
     const relativePath = path.relative(projPath, filePath);
-    // 读取文件内容
     const fileContent = fs.readFileSync(filePath, "utf-8");
-
-    // 将文件内容按行分割
-    const lines = fileContent.split("\n");
-
-    // 使用栈来跟踪多层 describe 嵌套
-    const describeStack: string[] = [];
-    let braceCount = 0;
-    const braceStack: number[] = [];
-
-    // 遍历每一行
-    for (const line of lines) {
-      // 计算当前行的缩进层级
-      const indentLevel = (line.match(/^\s*/)?.[0].length || 0) / 4; // 假设使用4个空格缩进
-
-      // 匹配 describe 标签
-      const describeMatch = line.match(/describe\(['"](.*?)['"],/);
-      if (describeMatch) {
-        // 根据缩进层级调整 describe 栈
-        while (describeStack.length > indentLevel) {
-          describeStack.pop();
-          braceStack.pop();
-        }
-        // 添加新的 describe 到栈中
-        describeStack.push(describeMatch[1]);
-        braceStack.push(braceCount);
-      }
-
-      // 匹配大括号来跟踪作用域
-      const openBraces = (line.match(/\{/g) || []).length;
-      const closeBraces = (line.match(/\}/g) || []).length;
-      braceCount += openBraces - closeBraces;
-
-      // 当遇到闭合大括号时，检查是否需要弹出 describe
-      if (closeBraces > 0) {
-        while (braceStack.length > 0 && braceCount <= braceStack[braceStack.length - 1]) {
-          describeStack.pop();
-          braceStack.pop();
-        }
-      }
-
-      // 扫描只有it或者test标签用例，无describe
-      const singleItMatch = line.match(/^(it|test)\(['"](.*?)['"],/);
-      if (singleItMatch) {
-        const testcase = `${relativePath.replace(projPath, "")}?${singleItMatch[2]}`;
-        testcases.push(testcase);
-        continue;
-      }
-
-      // 匹配describe下的 it 或 test 标签
-      const itMatch = line.match(/\s+(it|test)\(['"](.*?)['"],/);
-      if (itMatch) {
-        if (describeStack.length > 0) {
-          // 构建完整的测试用例路径，包含所有层级的 describe
-          const fullDescribePath = describeStack.join(' ');
-          const testcase = `${relativePath.replace(projPath, "")}?${fullDescribePath} ${itMatch[2]}`;
-          testcases.push(testcase);
-        } else {
-          // 如果没有 describe 包围，直接使用测试名称
-          const testcase = `${relativePath.replace(projPath, "")}?${itMatch[2]}`;
-          testcases.push(testcase);
-        }
-      }
-    }
+    const fileCases = parseFileTestcasesByTokens(fileContent, relativePath);
+    testcases.push(...fileCases);
   }
 
   return Array.from(new Set(testcases));
+};
+
+interface Token {
+  type: 'describe' | 'test' | 'brace_open' | 'brace_close';
+  value: string;
+  line: number;
+}
+
+const parseFileTestcasesByTokens = (content: string, relativePath: string): string[] => {
+  const testcases: string[] = [];
+  const tokens = tokenizeTestFile(content);
+  
+  // 使用栈管理嵌套结构
+  const describeStack: string[] = [];
+  let braceLevel = 0;
+  const describeBraceLevels: number[] = [];
+  
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'brace_open':
+        braceLevel++;
+        break;
+        
+      case 'brace_close':
+        braceLevel--;
+        // 检查是否需要弹出 describe
+        while (describeBraceLevels.length > 0 && 
+               describeBraceLevels[describeBraceLevels.length - 1] > braceLevel) {
+          describeBraceLevels.pop();
+          describeStack.pop();
+        }
+        break;
+        
+      case 'describe':
+        describeStack.push(token.value);
+        describeBraceLevels.push(braceLevel);
+        break;
+        
+      case 'test':
+        const fullTestName = [...describeStack, token.value].join(' ');
+        const testcase = `${relativePath}?${fullTestName}`;
+        testcases.push(testcase);
+        break;
+    }
+  }
+  
+  return testcases;
+};
+
+// 词法分析器
+const tokenizeTestFile = (content: string): Token[] => {
+  const tokens: Token[] = [];
+  const lines = content.split('\n');
+  
+  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+    const line = lines[lineNum];
+    
+    // 匹配 describe
+    const describeMatch = line.match(/describe\(['"](.*?)['"],/);
+    if (describeMatch) {
+      tokens.push({
+        type: 'describe',
+        value: describeMatch[1],
+        line: lineNum
+      });
+    }
+    
+    // 匹配 it/test
+    const testMatch = line.match(/^\s*(it|test)\(['"](.*?)['"],/);
+    if (testMatch) {
+      tokens.push({
+        type: 'test',
+        value: testMatch[2],
+        line: lineNum
+      });
+    }
+    
+    // 匹配开花括号
+    const openBraces = line.match(/\{/g);
+    if (openBraces) {
+      openBraces.forEach(() => {
+        tokens.push({
+          type: 'brace_open',
+          value: '{',
+          line: lineNum
+        });
+      });
+    }
+    
+    // 匹配闭花括号
+    const closeBraces = line.match(/\}/g);
+    if (closeBraces) {
+      closeBraces.forEach(() => {
+        tokens.push({
+          type: 'brace_close',
+          value: '}',
+          line: lineNum
+        });
+      });
+    }
+  }
+  
+  return tokens;
 };
 
 /// 生成运行测试用例的命令
