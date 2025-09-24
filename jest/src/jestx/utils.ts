@@ -165,11 +165,12 @@ const parseFileTestcasesByTokens = (content: string, relativePath: string): stri
   
   for (const token of tokens) {
     switch (token.type) {
-      case 'brace_open':
+      case 'brace_open': {
         braceLevel++;
         break;
+      }
         
-      case 'brace_close':
+      case 'brace_close': {
         braceLevel--;
         // 检查是否需要弹出 describe
         while (describeBraceLevels.length > 0 && 
@@ -178,16 +179,22 @@ const parseFileTestcasesByTokens = (content: string, relativePath: string): stri
           describeStack.pop();
         }
         break;
+      }
         
-      case 'describe':
+      case 'describe': {
         describeStack.push(token.value);
         describeBraceLevels.push(braceLevel);
         break;
+      }
         
-      case 'test':
+      case 'test': {
         const fullTestName = [...describeStack, token.value].join(' ');
         const testcase = `${relativePath}?${fullTestName}`;
         testcases.push(testcase);
+        break;
+      }
+      
+      default:
         break;
     }
   }
