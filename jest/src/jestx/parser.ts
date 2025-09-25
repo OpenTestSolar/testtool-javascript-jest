@@ -51,7 +51,7 @@ export async function collectTestCases(
 
     if (runMode === 'file') {
       // 文件模式：只返回文件路径
-      loadCaseResult = testData
+      loadCaseResult = testData.map((filePath: string) => path.relative(projPath, filePath));
       log.info("Jest testtool file mode - returning files only: \n", loadCaseResult);
     } else {
       // 正常模式：解析所有用例
