@@ -1,6 +1,6 @@
 {
   "name": "testsolar-oss-jest",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "TestSolar support for jest tool",
   "main": "main.js",
   "scripts": {

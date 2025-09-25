@@ -156,107 +156,58 @@ interface Token {
 
 const parseFileTestcasesByTokens = (content: string, relativePath: string): string[] => {
   const testcases: string[] = [];
-  const tokens = tokenizeTestFile(content);
+  const lines = content.split('\n');
   
-  // 使用栈管理嵌套结构
+  // 状态管理
   const describeStack: string[] = [];
-  let braceLevel = 0;
-  const describeBraceLevels: number[] = [];
+  const indentStack: number[] = [];
   
-  for (const token of tokens) {
-    switch (token.type) {
-      case 'brace_open': {
-        braceLevel++;
-        break;
-      }
-        
-      case 'brace_close': {
-        braceLevel--;
-        // 检查是否需要弹出 describe
-        while (describeBraceLevels.length > 0 && 
-               describeBraceLevels[describeBraceLevels.length - 1] > braceLevel) {
-          describeBraceLevels.pop();
-          describeStack.pop();
-        }
-        break;
-      }
-        
-      case 'describe': {
-        describeStack.push(token.value);
-        describeBraceLevels.push(braceLevel);
-        break;
-      }
-        
-      case 'test': {
-        const fullTestName = [...describeStack, token.value].join(' ');
-        const testcase = `${relativePath}?${fullTestName}`;
-        testcases.push(testcase);
-        break;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    
+    // 跳过空行和注释
+    if (!trimmedLine || trimmedLine.startsWith('//')) {
+      continue;
+    }
+    
+    // 计算缩进（空格数）
+    const indent = line.search(/\S/);
+    
+    // 处理 describe
+    const describeMatch = line.match(/describe\(['"](.*?)['"],/);
+    if (describeMatch) {
+      // 移除缩进更大或相等的 describe（同级或子级）
+      while (indentStack.length > 0 && indentStack[indentStack.length - 1] >= indent) {
+        indentStack.pop();
+        describeStack.pop();
       }
       
-      default:
-        break;
+      // 添加新的 describe
+      describeStack.push(describeMatch[1]);
+      indentStack.push(indent);
+      continue;
+    }
+    
+    // 处理 it/test
+    const testMatch = line.match(/^\s*(it|test)\(['"](.*?)['"],/);
+    if (testMatch) {
+      // 移除缩进更大或相等的 describe
+      while (indentStack.length > 0 && indentStack[indentStack.length - 1] >= indent) {
+        indentStack.pop();
+        describeStack.pop();
+      }
+      
+      // 构建测试用例名称
+      const fullTestName = [...describeStack, testMatch[2]].join(' ');
+      const testcase = `${relativePath}?${fullTestName}`;
+      testcases.push(testcase);
     }
   }
   
   return testcases;
 };
 
-// 词法分析器
-const tokenizeTestFile = (content: string): Token[] => {
-  const tokens: Token[] = [];
-  const lines = content.split('\n');
-  
-  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-    const line = lines[lineNum];
-    
-    // 匹配 describe
-    const describeMatch = line.match(/describe\(['"](.*?)['"],/);
-    if (describeMatch) {
-      tokens.push({
-        type: 'describe',
-        value: describeMatch[1],
-        line: lineNum
-      });
-    }
-    
-    // 匹配 it/test
-    const testMatch = line.match(/^\s*(it|test)\(['"](.*?)['"],/);
-    if (testMatch) {
-      tokens.push({
-        type: 'test',
-        value: testMatch[2],
-        line: lineNum
-      });
-    }
-    
-    // 匹配开花括号
-    const openBraces = line.match(/\{/g);
-    if (openBraces) {
-      openBraces.forEach(() => {
-        tokens.push({
-          type: 'brace_open',
-          value: '{',
-          line: lineNum
-        });
-      });
-    }
-    
-    // 匹配闭花括号
-    const closeBraces = line.match(/\}/g);
-    if (closeBraces) {
-      closeBraces.forEach(() => {
-        tokens.push({
-          type: 'brace_close',
-          value: '}',
-          line: lineNum
-        });
-      });
-    }
-  }
-  
-  return tokens;
-};
 
 /// 生成运行测试用例的命令
 export function generateCommands(
