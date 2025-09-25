@@ -148,11 +148,6 @@ export const parseTestcase = (
   return Array.from(new Set(testcases));
 };
 
-interface Token {
-  type: 'describe' | 'test' | 'brace_open' | 'brace_close';
-  value: string;
-  line: number;
-}
 
 const parseFileTestcasesByTokens = (content: string, relativePath: string): string[] => {
   const testcases: string[] = [];
