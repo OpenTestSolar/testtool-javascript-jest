@@ -138,78 +138,71 @@ export const parseTestcase = (
 ): string[] => {
   const testcases: string[] = [];
 
-  // 遍历所有文件
   for (const filePath of fileData) {
     const relativePath = path.relative(projPath, filePath);
-    // 读取文件内容
     const fileContent = fs.readFileSync(filePath, "utf-8");
-
-    // 将文件内容按行分割
-    const lines = fileContent.split("\n");
-
-    // 使用栈来跟踪多层 describe 嵌套
-    const describeStack: string[] = [];
-    let braceCount = 0;
-    const braceStack: number[] = [];
-
-    // 遍历每一行
-    for (const line of lines) {
-      // 计算当前行的缩进层级
-      const indentLevel = (line.match(/^\s*/)?.[0].length || 0) / 4; // 假设使用4个空格缩进
-
-      // 匹配 describe 标签
-      const describeMatch = line.match(/describe\(['"](.*?)['"],/);
-      if (describeMatch) {
-        // 根据缩进层级调整 describe 栈
-        while (describeStack.length > indentLevel) {
-          describeStack.pop();
-          braceStack.pop();
-        }
-        // 添加新的 describe 到栈中
-        describeStack.push(describeMatch[1]);
-        braceStack.push(braceCount);
-      }
-
-      // 匹配大括号来跟踪作用域
-      const openBraces = (line.match(/\{/g) || []).length;
-      const closeBraces = (line.match(/\}/g) || []).length;
-      braceCount += openBraces - closeBraces;
-
-      // 当遇到闭合大括号时，检查是否需要弹出 describe
-      if (closeBraces > 0) {
-        while (braceStack.length > 0 && braceCount <= braceStack[braceStack.length - 1]) {
-          describeStack.pop();
-          braceStack.pop();
-        }
-      }
-
-      // 扫描只有it或者test标签用例，无describe
-      const singleItMatch = line.match(/^(it|test)\(['"](.*?)['"],/);
-      if (singleItMatch) {
-        const testcase = `${relativePath.replace(projPath, "")}?${singleItMatch[2]}`;
-        testcases.push(testcase);
-        continue;
-      }
-
-      // 匹配describe下的 it 或 test 标签
-      const itMatch = line.match(/\s+(it|test)\(['"](.*?)['"],/);
-      if (itMatch) {
-        if (describeStack.length > 0) {
-          // 构建完整的测试用例路径，包含所有层级的 describe
-          const fullDescribePath = describeStack.join(' ');
-          const testcase = `${relativePath.replace(projPath, "")}?${fullDescribePath} ${itMatch[2]}`;
-          testcases.push(testcase);
-        } else {
-          // 如果没有 describe 包围，直接使用测试名称
-          const testcase = `${relativePath.replace(projPath, "")}?${itMatch[2]}`;
-          testcases.push(testcase);
-        }
-      }
-    }
+    const fileCases = parseFileTestcasesByTokens(fileContent, relativePath);
+    testcases.push(...fileCases);
   }
 
   return Array.from(new Set(testcases));
 };
+
+
+const parseFileTestcasesByTokens = (content: string, relativePath: string): string[] => {
+  const testcases: string[] = [];
+  const lines = content.split('\n');
+  
+  // 状态管理
+  const describeStack: string[] = [];
+  const indentStack: number[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    
+    // 跳过空行和注释
+    if (!trimmedLine || trimmedLine.startsWith('//')) {
+      continue;
+    }
+    
+    // 计算缩进（空格数）
+    const indent = line.search(/\S/);
+    
+    // 处理 describe
+    const describeMatch = line.match(/describe\(['"](.*?)['"],/);
+    if (describeMatch) {
+      // 移除缩进更大或相等的 describe（同级或子级）
+      while (indentStack.length > 0 && indentStack[indentStack.length - 1] >= indent) {
+        indentStack.pop();
+        describeStack.pop();
+      }
+      
+      // 添加新的 describe
+      describeStack.push(describeMatch[1]);
+      indentStack.push(indent);
+      continue;
+    }
+    
+    // 处理 it/test
+    const testMatch = line.match(/^\s*(it|test)\(['"](.*?)['"],/);
+    if (testMatch) {
+      // 移除缩进更大或相等的 describe
+      while (indentStack.length > 0 && indentStack[indentStack.length - 1] >= indent) {
+        indentStack.pop();
+        describeStack.pop();
+      }
+      
+      // 构建测试用例名称
+      const fullTestName = [...describeStack, testMatch[2]].join(' ');
+      const testcase = `${relativePath}?${fullTestName}`;
+      testcases.push(testcase);
+    }
+  }
+  
+  return testcases;
+};
+
 
 /// 生成运行测试用例的命令
 export function generateCommands(

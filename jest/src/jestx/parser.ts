@@ -45,9 +45,19 @@ export async function collectTestCases(
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const testData = JSON.parse(fileContent);
 
-    // 解析所有用例
-    const loadCaseResult = parseTestcase(projPath, testData);
-    log.info("Jest testtool parse all testcases: \n", loadCaseResult);
+    // 检查是否为文件模式
+    const runMode = process.env.TESTSOLAR_TTP_RUN_MODE;
+    let loadCaseResult: string[];
+
+    if (runMode === 'file') {
+      // 文件模式：只返回文件路径
+      loadCaseResult = testData.map((filePath: string) => path.relative(projPath, filePath));
+      log.info("Jest testtool file mode - returning files only: \n", loadCaseResult);
+    } else {
+      // 正常模式：解析所有用例
+      loadCaseResult = parseTestcase(projPath, testData);
+      log.info("Jest testtool parse all testcases: \n", loadCaseResult);
+    }
 
     // 过滤用例
     let filterResult;
@@ -72,9 +82,15 @@ export async function collectTestCases(
 
     // 提取用例数据
     filterResult.forEach((filteredTestCase: string) => {
-      const [path, descAndName] = filteredTestCase.split("?");
-      const test = new TestCase(`${path}?${descAndName}`, {});
-      result.Tests.push(test);
+       if (runMode === 'file') {
+        // 文件模式：直接使用文件路径作为测试用例名称
+        const test = new TestCase(filteredTestCase, {});
+        result.Tests.push(test);
+       } else {
+        const [path, descAndName] = filteredTestCase.split("?");
+        const test = new TestCase(`${path}?${descAndName}`, {});
+        result.Tests.push(test);
+       }
     });
   } catch (error: unknown) {
     // 直接抛出异常并退出
